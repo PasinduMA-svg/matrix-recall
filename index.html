@@ -1,2050 +1,729 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#121a33">
-<meta name="description" content="A memory training game: watch the tiles light up, then tap them back. Grids grow as you level up.">
-<title>Matrix Recall</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23121a33'/%3E%3Crect x='5' y='5' width='6' height='6' rx='1.5' fill='%23ffc857'/%3E%3Crect x='13' y='5' width='6' height='6' rx='1.5' fill='%2329366a'/%3E%3Crect x='21' y='5' width='6' height='6' rx='1.5' fill='%2329366a'/%3E%3Crect x='5' y='13' width='6' height='6' rx='1.5' fill='%2329366a'/%3E%3Crect x='13' y='13' width='6' height='6' rx='1.5' fill='%23ffc857'/%3E%3Crect x='21' y='13' width='6' height='6' rx='1.5' fill='%2329366a'/%3E%3Crect x='5' y='21' width='6' height='6' rx='1.5' fill='%2329366a'/%3E%3Crect x='13' y='21' width='6' height='6' rx='1.5' fill='%2329366a'/%3E%3Crect x='21' y='21' width='6' height='6' rx='1.5' fill='%23ffc857'/%3E%3C/svg%3E">
-
-<!-- Fonts -->
+<title>Thinkstellar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Free brain games that train memory, focus and reaction time. Play in your browser on any phone or computer.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
-
-<!--
-  ================================================================
-  AD NETWORK SCRIPT
-  When you are approved for Google AdSense (or another network),
-  paste the loader script here, for example:
-
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
-
-  Then wire up the slots inside the AdManager module in the script below.
-  ================================================================
--->
-
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* =========================================================
-   DESIGN TOKENS
-   ========================================================= */
+/* Layout: one long scroll through "space" — hero, a pinned round-by-round demo,
+   live game, a sideways-scrolling strip of concepts, the weekly race, launch CTA.
+   Single committed dark look (deep space), so no light theme. */
 :root {
-  --bg: #121a33;
-  --surface: #1a2446;
-  --surface-2: #222e57;
-  --tile: #29366a;
-  --tile-hover: #33427e;
-  --line: #34427a;
-  --text: #eef0fa;
-  --muted: #9aa4c8;
-  --amber: #ffc857;   /* lit tiles, primary actions */
-  --mint: #4fd6b0;    /* correct */
-  --coral: #ff6b81;   /* wrong */
-
-  --r-tile: 12px;
-  --r-panel: 20px;
-  --r-pill: 999px;
-
-  --banner-h: 66px;   /* bottom ad banner height (mobile) */
-  --font: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --void: #050816;        /* page ground: deep space */
+  --hull: #0d1430;        /* raised panels */
+  --hull-2: #141d40;
+  --rim: #24305e;         /* hairlines and borders */
+  --star: #eef0fa;        /* main text */
+  --dust: #9ea7ca;        /* secondary text */
+  --tile: #29366a;        /* game tile, idle */
+  --amber: #ffc857;       /* lit tile, primary action */
+  --mint: #4fd6b0;        /* correct */
+  --violet: #8f9bdc;      /* cool accent for concepts */
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  --max: 1160px;
   color-scheme: dark;
 }
-@media (min-width: 768px) and (min-height: 600px) {
-  :root { --banner-h: 106px; } /* room for a 728x90 leaderboard (not on short landscape phones) */
-}
-
-/* =========================================================
-   BASE
-   ========================================================= */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }  /* body grows with content so its bottom padding always clears the fixed ad banner */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  font-family: var(--font);
-  background: radial-gradient(120% 70% at 50% 0%, #1c2852 0%, var(--bg) 60%) fixed, var(--bg);
-  color: var(--text);
+  margin: 0;
+  background: var(--void);
+  color: var(--star);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(var(--banner-h) + env(safe-area-inset-bottom, 0px));
-  min-height: 100vh;
-  min-height: 100svh;
-  overflow-x: hidden;
 }
-button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
-:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
-[hidden] { display: none !important; }
-
-.app {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 10px 16px 20px;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100svh - var(--banner-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-}
-
-/* =========================================================
-   TOP BAR
-   ========================================================= */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 0 14px;
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  font-size: 1.15rem;
-  letter-spacing: -0.01em;
-}
-.brand-mark { display: grid; grid-template-columns: repeat(3, 7px); gap: 2px; }
-.brand-mark i { width: 7px; height: 7px; border-radius: 2px; background: var(--tile); }
-.brand-mark i.on { background: var(--amber); }
-.topbar-actions { display: flex; gap: 8px; }
-.icon-btn {
-  width: 42px; height: 42px;
-  border-radius: 12px;
-  background: var(--surface);
-  display: grid;
-  place-items: center;
-  transition: background .15s ease;
-}
-.icon-btn:hover { background: var(--surface-2); }
-.icon-btn svg { width: 20px; height: 20px; }
-
-/* =========================================================
-   SCREENS
-   ========================================================= */
-.screen { display: none; flex: 1; flex-direction: column; }
-.screen.active { display: flex; animation: screenIn .35s ease both; }
-@keyframes screenIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-/* ---------- Start screen ---------- */
-.start-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.hero { text-align: center; padding: 12px 0 26px; }
-.demo-grid {
-  width: 136px;
-  margin: 4px auto 28px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-.demo-grid i {
-  aspect-ratio: 1;
-  border-radius: 7px;
-  background: var(--tile);
-  transition: background .35s ease, box-shadow .35s ease;
-}
-.demo-grid i.on { background: var(--amber); box-shadow: 0 0 16px rgba(255, 200, 87, .5); }
-.hero-title {
-  font-size: clamp(2rem, 7.5vw, 3.1rem);
-  line-height: 1.04;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-.hero-sub {
-  color: var(--muted);
-  margin: 14px auto 0;
-  max-width: 36ch;
-  line-height: 1.5;
-  font-size: 1.02rem;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  background: var(--surface);
-  border-radius: var(--r-panel);
-  padding: 14px 4px;
-  margin-bottom: 16px;
-}
-.stats > div { text-align: center; padding: 0 6px; }
-.stats > div + div { border-left: 1px solid var(--line); }
-.stats dt { font-size: .8rem; color: var(--muted); }
-.stats dd { font-size: 1.3rem; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
-
-.howto {
-  scroll-margin-bottom: calc(var(--banner-h) + 16px); /* keep the opened list clear of the ad banner */
-  margin-top: 16px;
-  background: var(--surface);
-  border-radius: 14px;
-  padding: 0 16px;
-}
-.howto summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 0;
-  cursor: pointer;
-  font-weight: 600;
-  list-style: none;
-}
-.howto summary::-webkit-details-marker { display: none; }
-.howto summary::after {           /* chevron on the right, flips when open */
-  content: "";
-  width: 9px; height: 9px;
-  margin-right: 4px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  transform: translateY(-3px) rotate(45deg);
-  transition: transform .2s ease;
-}
-.howto[open] summary::after { transform: translateY(2px) rotate(-135deg); }
-.howto ul {
-  list-style: none;
-  padding: 2px 0 16px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  line-height: 1.5;
-  font-size: .95rem;
-  text-align: left;
-}
-.howto li { position: relative; padding-left: 18px; margin-top: 10px; }
-.howto li::before {               /* amber dot, lined up with the heading's left edge */
-  content: "";
-  position: absolute;
-  left: 2px; top: .6em;
-  width: 6px; height: 6px;
-  border-radius: 2px;
-  background: var(--amber);
-}
-
-/* ---------- Buttons ---------- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--void); }
+a { color: var(--amber); }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.03em; }
+p { margin: 0; }
+.wrap { max-width: var(--max); margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.label { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dust); }
 .btn {
-  display: block;
-  width: 100%;
-  padding: 15px 20px;
-  border-radius: var(--r-pill);
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-align: center;
-  transition: transform .12s ease, background .15s ease, opacity .15s ease;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 0 26px; border-radius: 999px;
+  font-family: var(--font-body); font-weight: 600; font-size: 17px; text-decoration: none;
+  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
 }
-.btn:active:not(:disabled) { transform: scale(.98); }
-.btn + .btn { margin-top: 10px; }
-.btn-primary { background: var(--amber); color: #2a1d00; }
-.btn-primary:hover { background: #ffd47a; }
-.btn-ghost { background: var(--surface-2); color: var(--text); }
-.btn-ghost:hover { background: #2a3766; }
-.btn-reward { background: transparent; box-shadow: inset 0 0 0 2px var(--mint); color: var(--mint); }
-.btn-reward:hover { background: rgba(79, 214, 176, .1); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:active { transform: scale(.97); }
+.btn-amber { background: var(--amber); color: #2a1d00; box-shadow: 0 0 0 0 rgba(255,200,87,.0); }
+.btn-amber:hover { box-shadow: 0 0 34px rgba(255,200,87,.45); }
+.btn-line { border: 1px solid var(--rim); color: var(--star); background: rgba(13,20,48,.5); }
+.btn-line:hover { border-color: var(--dust); }
+.btn svg { width: 18px; height: 18px; }
 
-/* ---------- HUD ---------- */
-.hud { background: var(--surface); border-radius: var(--r-panel); padding: 12px 14px; }
-.hud-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.hud-label { display: block; font-size: .78rem; color: var(--muted); }
-.hud-value {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  font-size: 1.3rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.25;
+/* ---------- starfield + cursor glow ---------- */
+#sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; transform: translateZ(0); }
+.glow {
+  position: fixed; left: 0; top: 0; width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  border-radius: 50%; pointer-events: none; z-index: 1; opacity: 0;
+  background: radial-gradient(closest-side, rgba(143,155,220,.14), rgba(143,155,220,0));
+  transition: opacity .4s ease;
 }
-.mult { font-size: .78rem; font-weight: 600; color: var(--muted); }
-.mult.hot { color: var(--amber); }
-.lives { display: flex; gap: 5px; align-items: center; height: 1.6rem; }
-.life { width: 14px; height: 14px; border-radius: 4px; background: var(--amber); transition: background .25s ease, transform .25s ease; }
-.life.lost { background: var(--tile); transform: scale(.8); }
+@media (pointer: fine) { .glow.on { opacity: 1; } }
+main, header.site, footer { position: relative; z-index: 2; }
 
-.timer { display: flex; align-items: center; gap: 10px; margin-top: 10px; transition: opacity .2s ease; }
-.timer.idle { opacity: .4; }
-.timer-track { flex: 1; height: 8px; border-radius: var(--r-pill); background: var(--tile); overflow: hidden; }
-.timer-fill {
-  height: 100%;
-  width: 100%;
-  background: var(--amber);
-  border-radius: inherit;
-  transform-origin: left center;
-  transition: background .2s ease;
+/* ---------- header ---------- */
+.progress { position: fixed; left: 0; top: env(safe-area-inset-top, 0px); height: 2px; width: 100%; z-index: 70; transform-origin: 0 50%; transform: scaleX(0); background: var(--amber); }
+header.site {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
+  transition: transform .35s ease, background .35s ease, border-color .35s ease;
+  border-bottom: 1px solid transparent;
 }
-.timer.low .timer-fill { background: var(--coral); }
-.timer-text { width: 3.6em; text-align: right; font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+header.site.solid { background: rgba(5,8,22,.92); border-color: rgba(36,48,94,.6); }
+@media (pointer: fine) { header.site.solid { background: rgba(5,8,22,.72); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); } }
+header.site.away { transform: translateY(-110%); }
+.bar { display: flex; align-items: center; gap: 20px; padding-block: 14px; }
+.logo { display: flex; align-items: center; gap: 12px; color: var(--star); text-decoration: none; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; margin-right: auto; }
+.mark { display: grid; grid-template-columns: repeat(3, 8px); gap: 3px; }
+.mark i { width: 8px; height: 8px; border-radius: 2px; background: var(--tile); }
+.mark i.on { background: var(--amber); }
+.nav { display: flex; gap: 26px; }
+.nav a { color: var(--dust); text-decoration: none; font-size: 15px; font-weight: 500; }
+.nav a:hover { color: var(--star); }
+.bar .btn { min-height: 44px; padding: 0 20px; font-size: 15px; }
+@media (max-width: 720px) { .nav { display: none; } }
 
-.status-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  margin: 16px 0 12px;
-  min-height: 34px;
-  text-align: center;
-}
-.status { font-size: 1.15rem; font-weight: 600; }
-.chip {
-  font-size: .82rem;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--muted);
-}
-.chip.order { background: rgba(255, 200, 87, .14); color: var(--amber); }
+/* ---------- hero ---------- */
+.hero { position: relative; overflow: clip; padding-block: clamp(40px, 9vw, 110px) clamp(56px, 8vw, 96px); }
+.hero-grid { display: flex; flex-wrap: wrap; align-items: center; gap: 40px 56px; }
+.hero-copy { flex: 999 1 480px; min-width: 0; will-change: transform, opacity; }
+.chip { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--rim); background: rgba(13,20,48,.6); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 12px var(--mint); }
+.hero h1 { margin-top: 26px; font-size: clamp(46px, 7.2vw, 96px); line-height: .95; font-weight: 800; }
+.hero h1 .w { display: inline-block; animation: rise .9s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 70ms + 80ms); }
+.hero h1 .lit { color: var(--amber); }
+@keyframes rise { from { opacity: .15; transform: translateY(.45em) rotate(2deg); } to { opacity: 1; transform: none; } }
+.lede { margin-top: 26px; max-width: 34em; font-size: clamp(17px, 2vw, 20px); color: var(--dust); }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.scrollcue { margin-top: 46px; display: flex; align-items: center; gap: 12px; }
+.scrollcue span.line { width: 46px; height: 1px; background: var(--rim); position: relative; overflow: hidden; }
+.scrollcue span.line::after { content: ""; position: absolute; inset: 0; background: var(--amber); transform: translateX(-100%); animation: cue 2.2s ease-in-out infinite; }
+@keyframes cue { 50% { transform: translateX(0); } 100% { transform: translateX(100%); } }
 
-/* ---------- Board ---------- */
-/* The wrap takes all leftover height; the board is the largest square that fits it. */
-.board-wrap {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;   /* board sits right under the status line on tall screens */
-  flex: 1 1 0;
-  min-height: 250px;
-  container-type: size;
+.orbit { flex: 1 1 340px; min-width: 0; position: relative; height: clamp(320px, 42vw, 470px); display: grid; place-items: center; will-change: transform; }
+.planet {
+  position: absolute; width: min(68%, 310px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #3b4fa8 0%, #22306a 42%, #0e1536 100%);
+  box-shadow: 0 0 0 1px rgba(143,155,220,.35), 0 0 110px rgba(110,130,255,.32);
 }
+.planet::after { content: ""; position: absolute; inset: 14% 10% 52% 18%; border-radius: 50%; border-top: 2px solid rgba(255,255,255,.08); transform: rotate(-12deg); }
+.ring { position: absolute; width: min(118%, 520px); aspect-ratio: 4 / 1; border-radius: 50%; border: 2px solid rgba(255,200,87,.5); transform: rotate(-16deg); }
+.moon { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 22px rgba(255,200,87,.9); }
+.mini {
+  position: relative; padding: 14px; border-radius: 24px; background: #1a2446; border: 1px solid var(--rim);
+  box-shadow: 0 34px 70px rgba(0,0,0,.5); transform: rotate(-7deg);
+}
+.mini-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: clamp(150px, 18vw, 204px); }
+.mini-grid i { aspect-ratio: 1; border-radius: 9px; background: var(--tile); transition: background .35s ease, box-shadow .35s ease; }
+.mini-grid i.lit { background: var(--amber); box-shadow: 0 0 18px rgba(255,200,87,.5); }
+.mini-grid i.ok { background: var(--mint); }
+
+/* ---------- marquee ---------- */
+.marquee { position: relative; overflow: hidden; border-block: 1px solid var(--rim); padding-block: 18px; background: rgba(13,20,48,.4); }
+.marquee-track { display: flex; gap: 40px; width: max-content; will-change: transform; }
+.marquee-track span { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 6vw, 72px); letter-spacing: -0.03em; white-space: nowrap; color: transparent; -webkit-text-stroke: 1px rgba(158,167,202,.55); }
+.marquee-track span.fill { color: var(--star); -webkit-text-stroke: 0; }
+.marquee-track b { align-self: center; color: var(--amber); font-size: clamp(22px, 3vw, 36px); }
+
+/* ---------- section heads ---------- */
+.sec { padding-block: clamp(72px, 10vw, 130px) 0; }
+.head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 40px; margin-bottom: 36px; }
+.head h2 { font-size: clamp(36px, 5.6vw, 68px); line-height: 1; font-weight: 800; max-width: 14em; }
+.head p { max-width: 30em; color: var(--dust); }
+
+/* reveal: resting state is visible; JS only pre-hides things below the fold */
+.reveal { transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1); }
+.reveal.pre { opacity: 0; transform: translateY(42px); }
+
+/* ---------- pinned demo ---------- */
+.demo { position: relative; height: 320vh; }
+.demo-stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; align-items: center; }
+.demo-inner { display: flex; flex-wrap: wrap; align-items: center; gap: 32px 64px; width: 100%; }
+.demo-copy { flex: 1 1 320px; min-width: 0; }
+.steps { position: relative; margin-top: 26px; min-height: 190px; }
+.step { position: absolute; inset: 0 auto auto 0; opacity: 0; transform: translateY(18px); transition: opacity .5s ease, transform .5s ease; max-width: 26em; }
+.step.on { opacity: 1; transform: none; }
+.step h3 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; }
+.step p { margin-top: 10px; color: var(--dust); font-size: 18px; }
+.ticks { display: flex; gap: 8px; margin-top: 18px; }
+.ticks i { width: 34px; height: 4px; border-radius: 4px; background: var(--rim); transition: background .4s ease; }
+.ticks i.on { background: var(--amber); }
+.demo-board { flex: 1 1 320px; min-width: 0; display: flex; justify-content: center; }
 .board {
-  --n: 3;
-  --side: min(100cqw, 100cqh, 600px);
-  --gap: clamp(4px, calc(var(--side) / (var(--n) * 9)), 12px); /* tighter gaps on big grids */
-  width: var(--side);
-  height: var(--side);
-  display: grid;
-  /* Every row and column is exactly the same size, whatever is inside a tile
-     (minmax(0, 1fr) stops a numbered tile from stretching its row). */
-  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-  grid-template-rows: repeat(var(--n), minmax(0, 1fr));
-  gap: var(--gap);
-  padding: var(--gap);
-  background: var(--surface);
-  border-radius: calc(var(--r-panel) + 4px);
-  transition: box-shadow .3s ease, opacity .2s ease;
+  width: min(100%, 420px); padding: 18px; border-radius: 30px; background: #121a33; border: 1px solid var(--rim);
+  box-shadow: 0 40px 90px rgba(0,0,0,.45); transition: box-shadow .5s ease;
 }
-.board.cleared { box-shadow: 0 0 0 2px var(--mint), 0 0 32px rgba(79, 214, 176, .25); }
-.board.shake { animation: shake .4s ease; }
-.app.is-paused .board { opacity: 0; }
+.board.won { box-shadow: 0 0 0 2px var(--mint), 0 0 60px rgba(79,214,176,.3); }
+.board-top { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono); font-size: 13px; color: var(--dust); }
+.board-top b { color: var(--star); font-size: 22px; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.timer { height: 6px; border-radius: 6px; background: var(--tile); overflow: hidden; margin: 12px 0 16px; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--amber); transform-origin: 0 50%; }
+.dgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.dgrid i { aspect-ratio: 1; border-radius: 12px; background: var(--tile); transition: background .3s ease, box-shadow .3s ease, transform .3s ease; }
+.dgrid i.lit { background: var(--amber); box-shadow: 0 0 24px rgba(255,200,87,.5); transform: scale(1.04); }
+.dgrid i.ok { background: var(--mint); }
+.board-foot { margin-top: 14px; font-family: var(--font-mono); font-size: 12.5px; color: var(--dust); min-height: 1.6em; }
+/* Phones: everything in the pinned demo must fit one screen, so it stacks tightly
+   and the board shrinks to whatever height is left. */
+@media (max-width: 760px) {
+  .demo-stage { padding-block: 14px; }
+  .demo-inner { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 14px; }
+  .demo-copy, .demo-board { flex: none; }
+  #how-title { font-size: 28px !important; margin-top: 6px !important; }
+  .steps { margin-top: 12px; min-height: 104px; }
+  .step h3 { font-size: 24px; }
+  .step p { font-size: 15.5px; margin-top: 6px; }
+  .ticks { margin-top: 8px; }
+  .board { width: min(100%, max(220px, calc(100svh - 380px))); margin: 0 auto; padding: 12px; border-radius: 24px; }
+  .dgrid { gap: 8px; }
+  .dgrid i { border-radius: 10px; }
+  .timer { margin: 8px 0 10px; }
+  .board-foot { margin-top: 8px; font-size: 11.5px; }
+}
+/* Fallback when a screen is too short to pin the demo: it scrolls normally. */
+.demo.nopin { height: auto; }
+.demo.nopin .demo-stage { position: static; height: auto; padding-block: 56px; }
 
-.tile {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  overflow: hidden;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-tile);
-  background: var(--tile);
-  font-weight: 800;
-  font-size: min(1.35rem, calc(var(--side) / var(--n) * .4)); /* numbers scale with the tile */
-  color: #12221d;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: background .18s ease, transform .12s ease, box-shadow .25s ease;
+/* ---------- featured game ---------- */
+.feature {
+  display: flex; flex-wrap: wrap; align-items: stretch; border-radius: 34px; overflow: hidden;
+  background: var(--hull); border: 1px solid var(--rim); transform-style: preserve-3d; transition: transform .25s ease;
 }
-.board:not(.locked) .tile:hover { background: var(--tile-hover); }
-.board:not(.locked) .tile:active { transform: scale(.96); }
-.board.locked .tile { cursor: default; }
-.tile.lit {
-  background: var(--amber);
-  box-shadow: 0 0 0 2px rgba(255, 200, 87, .35), 0 0 28px rgba(255, 200, 87, .55);
-  transform: scale(1.03);
-}
-.tile.correct, .board:not(.locked) .tile.correct:hover {
-  background: var(--mint);
-  box-shadow: 0 0 18px rgba(79, 214, 176, .4);
-  animation: pop .22s ease;
-}
-.tile.wrong { background: var(--coral); color: #2b0a10; animation: shake .35s ease; }
-.tile.missed { box-shadow: inset 0 0 0 3px var(--amber); color: var(--amber); }
+.feature-art { flex: 1 1 340px; min-width: 0; display: grid; place-items: center; padding: 40px 24px; background: #121a33; position: relative; }
+.feature-art .dgrid { width: min(100%, 300px); }
+.feature-copy { flex: 999 1 380px; min-width: 0; padding: clamp(28px, 4vw, 52px); display: flex; flex-direction: column; gap: 16px; }
+.feature-copy h3 { font-size: clamp(40px, 5vw, 60px); font-weight: 800; line-height: 1; }
+.feature-copy > p { color: var(--dust); max-width: 30em; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rim); border: 1px solid var(--rim); border-radius: 18px; overflow: hidden; margin-top: 6px; }
+.facts div { background: var(--hull-2); padding: 14px 16px; }
+.facts dt { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--dust); }
+.facts dd { margin: 4px 0 0; font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+.feature-copy .btn { align-self: flex-start; margin-top: 8px; }
+@media (max-width: 460px) { .facts { grid-template-columns: 1fr; } }
 
-.mode-hint { text-align: center; color: var(--muted); font-size: .9rem; margin: -4px 0 12px; min-height: 1.3em; }
-#screen-game .board-wrap { order: 1; }   /* hint sits between the status line and the board */
+/* ---------- sideways strip ---------- */
+.side { position: relative; }
+.side-stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.side-track { display: flex; gap: 22px; padding-left: max(var(--gutter-l), calc((100vw - var(--max)) / 2 + 16px)); padding-right: var(--gutter-r); will-change: transform; }
+.concept {
+  flex: 0 0 min(78vw, 380px); min-height: 400px; border-radius: 30px; padding: 30px;
+  background: #0a1027; border: 1px dashed #2f3c72; display: flex; flex-direction: column; gap: 14px;
+}
+.concept .ic { width: 64px; height: 64px; border-radius: 20px; background: var(--hull-2); display: grid; place-items: center; color: var(--violet); }
+.concept .ic svg { width: 30px; height: 30px; }
+.concept h3 { font-size: 32px; font-weight: 800; margin-top: auto; }
+.concept p { color: var(--dust); }
+.concept.ask { border-style: solid; border-color: var(--amber); background: rgba(255,200,87,.06); }
+.concept.ask h3 { color: var(--amber); }
 
-.float-layer { position: absolute; inset: 0; pointer-events: none; display: grid; place-items: center; }
-.float {
-  font-size: clamp(1.8rem, 7vw, 2.6rem);
-  font-weight: 800;
-  color: var(--mint);
-  text-shadow: 0 2px 14px rgba(0, 0, 0, .45);
-  animation: floatUp 1s ease forwards;
-}
+/* ---------- weekly race ---------- */
+.race { display: flex; flex-wrap: wrap; gap: 28px; align-items: stretch; }
+.race-copy { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.race-copy p { color: var(--dust); max-width: 30em; }
+.count { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px; max-width: 460px; }
+.count div { border-radius: 18px; background: var(--hull); border: 1px solid var(--rim); padding: 14px 8px; text-align: center; }
+.count b { display: block; font-family: var(--font-display); font-weight: 800; font-size: clamp(28px, 4vw, 40px); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.count span { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dust); }
+.podium { flex: 1 1 320px; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 28px 24px 0; border-radius: 30px; background: var(--hull); border: 1px solid var(--rim); min-height: 340px; }
+.pod { text-align: center; display: flex; flex-direction: column; gap: 10px; }
+.pod .who { width: 52px; height: 52px; margin: 0 auto; border-radius: 50%; border: 1px dashed var(--dust); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--dust); }
+.pod .col { border-radius: 18px 18px 0 0; background: var(--hull-2); display: grid; place-items: start center; padding-top: 14px; font-family: var(--font-display); font-weight: 800; font-size: 34px; color: var(--dust); transform-origin: 50% 100%; transition: transform 1s cubic-bezier(.2,.8,.2,1); }
+.pod.first .col { background: var(--amber); color: #2a1d00; box-shadow: 0 0 40px rgba(255,200,87,.25); }
+.pod.first .who { border: 0; background: var(--amber); color: #2a1d00; }
+.podium.pre .col { transform: scaleY(.2); }
 
-@keyframes pop { 0% { transform: scale(.92); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-}
-@keyframes floatUp {
-  0% { opacity: 0; transform: translateY(12px) scale(.9); }
-  20% { opacity: 1; transform: none; }
-  100% { opacity: 0; transform: translateY(-44px); }
-}
+/* ---------- launch ---------- */
+.launch { position: relative; margin-top: clamp(72px, 10vw, 130px); padding-block: clamp(80px, 12vw, 150px); text-align: center; overflow: hidden; border-top: 1px solid var(--rim); }
+.rings { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.rings i { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px solid rgba(143,155,220,.22); transform: translate(-50%, -50%); }
+.rings i:nth-child(1) { width: 320px; height: 320px; }
+.rings i:nth-child(2) { width: 560px; height: 560px; border-color: rgba(255,200,87,.25); }
+.rings i:nth-child(3) { width: 820px; height: 820px; }
+.rings b { position: absolute; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 16px var(--amber); }
+.launch h2 { position: relative; font-size: clamp(44px, 8vw, 104px); line-height: .95; font-weight: 800; }
+.launch p { position: relative; margin: 20px auto 0; max-width: 30em; color: var(--dust); }
+.launch .btn { position: relative; margin-top: 34px; }
 
-/* ---------- Game over ---------- */
-.over { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 8px 0; }
-.over-reason { color: var(--muted); font-size: 1.02rem; }
-.over-score {
-  font-size: clamp(3.6rem, 17vw, 5.8rem);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1;
-  margin: 8px 0 10px;
-  font-variant-numeric: tabular-nums;
-}
-.over-record {
-  align-self: center;
-  background: rgba(79, 214, 176, .14);
-  color: var(--mint);
-  padding: 5px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-.over-best { color: var(--muted); margin-bottom: 22px; }
-.over .stats { margin-bottom: 22px; }
+footer { border-top: 1px solid var(--rim); }
+.foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 30px; padding-block: 28px 40px; color: var(--dust); font-size: 15px; }
+.foot nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.foot nav a { color: var(--dust); text-decoration: none; }
+.foot nav a:hover { color: var(--star); }
 
-/* ---------- Leaderboard ---------- */
-.btn-board { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.btn-board svg { width: 20px; height: 20px; color: var(--amber); }
-.btn-sm { width: auto; padding: 12px 18px; font-size: 1rem; flex: none; }
-.link-btn { color: var(--amber); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 6px 2px; }
-.link-btn:hover { color: #ffd47a; }
-
-.lb-result {
-  background: var(--surface);
-  border-radius: var(--r-panel);
-  padding: 14px 16px;
-  margin: -8px 0 16px;
-  text-align: left;
-}
-.lb-rank { font-weight: 600; line-height: 1.45; }
-.lb-rank .muted { color: var(--muted); font-weight: 400; }
-.lb-result .link-btn { margin-top: 2px; }
-
-.name-form label { display: block; font-weight: 600; margin-bottom: 10px; text-align: left; }
-.name-row { display: flex; gap: 8px; }
-.name-row input {
-  flex: 1;
-  min-width: 0;
-  font: inherit;
-  font-size: 16px; /* 16px stops iOS from zooming in on focus */
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-.name-row input::placeholder { color: #6f7aa3; }
-.name-row input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 200, 87, .2); }
-.name-error { color: var(--coral); font-size: .9rem; margin-top: 8px; text-align: left; }
-
-#screen-board { gap: 14px; padding-top: 4px; }
-.lb-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
-.lb-sub { color: var(--muted); font-size: .92rem; margin-top: 4px; }
-.lb-note { background: var(--surface); border-radius: 14px; padding: 14px 16px; color: var(--muted); line-height: 1.5; }
-.lb-list { list-style: none; background: var(--surface); border-radius: var(--r-panel); padding: 6px; }
-.lb-list:empty { display: none; }
-.lb-row {
-  display: grid;
-  grid-template-columns: 2.2em minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
-  border-radius: 14px;
-}
-.lb-row + .lb-row { margin-top: 2px; }
-.lb-pos {
-  width: 2em; height: 2em;
-  display: grid; place-items: center;
-  border-radius: 9px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-weight: 800;
-  font-size: .9rem;
-  font-variant-numeric: tabular-nums;
-}
-.lb-row.top .lb-pos { background: rgba(255, 200, 87, .16); color: var(--amber); }
-.lb-row.first .lb-pos { background: var(--amber); color: #2a1d00; }
-.lb-who { min-width: 0; }
-.lb-name { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-lvl { display: block; font-size: .8rem; color: var(--muted); }
-.lb-score { font-weight: 800; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
-.lb-row.me { background: rgba(79, 214, 176, .1); box-shadow: inset 0 0 0 1.5px rgba(79, 214, 176, .55); }
-.lb-row.me .lb-name::after { content: " (you)"; color: var(--mint); font-weight: 600; }
-.lb-me { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); padding: 0 4px; }
-.lb-me strong { color: var(--text); }
-.lb-back { margin-top: auto; }
-
-/* =========================================================
-   MODALS (pause + ads)
-   ========================================================= */
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  overflow-y: auto;           /* short landscape screens: scroll instead of cutting the card off */
-  overscroll-behavior: contain;
-  padding: 20px;
-  padding-top: calc(20px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  background: rgba(8, 12, 28, .74);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-.modal.ad-modal { z-index: 80; }
-.ad-modal .modal-card { position: relative; }
-/* Always-available close button on every ad */
-.ad-x {
-  position: absolute;
-  top: 10px; right: 10px;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
-  color: var(--text);
-}
-.ad-x:hover { background: var(--tile-hover); }
-.ad-x svg { width: 18px; height: 18px; }
-.modal-card {
-  width: min(100%, 380px);
-  margin: auto;
-  background: var(--surface);
-  border-radius: var(--r-panel);
-  padding: 24px;
-  text-align: center;
-  animation: cardIn .25s ease both;
-}
-.modal-card:focus { outline: none; }
-.modal-card h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
-.modal-card p { color: var(--muted); line-height: 1.5; margin: 8px 0 20px; }
-@keyframes cardIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
-
-/* =========================================================
-   AD SLOTS (placeholders — safe to restyle once live ads run)
-   ========================================================= */
-.ad-label { font-size: .8rem; color: var(--muted); }
-.ad-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed #4a5894;
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: .75rem;
-  text-align: center;
-  overflow: hidden;
-  padding: 4px 8px;
-}
-.ad-slot-rect { width: 300px; max-width: 100%; height: 250px; margin: 10px auto 18px; }
-
-:root.no-ads { --banner-h: 0px; }  /* set by CONFIG.ads.enabled = false */
-.ad-banner {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 40;
-  height: calc(var(--banner-h) + env(safe-area-inset-bottom, 0px));
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
-  background: #0e1429;
-  border-top: 1px solid var(--line);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.ad-slot-banner { width: 320px; max-width: 100%; height: 50px; }
-@media (min-width: 768px) and (min-height: 600px) {
-  .ad-slot-banner { width: 728px; height: 90px; }
-}
-
-/* =========================================================
-   RESPONSIVE TWEAKS
-   ========================================================= */
-@media (max-width: 380px) {
-  .hud { padding: 10px 10px; }
-  .hud-value { font-size: 1.12rem; }
-  .life { width: 12px; height: 12px; }
-}
-@media (max-height: 760px) {
-  .demo-grid { width: 104px; margin-bottom: 18px; }
-  .hero { padding: 4px 0 18px; }
-  .hero-title { font-size: clamp(1.7rem, 6.5vw, 2.5rem); }
-  .hero-sub { margin-top: 10px; font-size: .96rem; }
-  .status-row { margin: 10px 0 8px; }
-  .mode-hint { margin: -2px 0 8px; }
-  .topbar { padding-bottom: 8px; }
-}
-@media (max-height: 600px) {
-  .demo-grid { display: none; }
-  .stats { padding: 10px 4px; margin-bottom: 12px; }
-  .btn { padding: 13px 20px; }
-  .mode-hint { display: none; } /* the round chip already says which mode it is */
-  .modal-card { padding: 16px 20px; }
-  .ad-slot-rect { margin: 8px auto 12px; }
-}
-
-/* Landscape phones: HUD on the left, board on the right */
-@media (orientation: landscape) and (max-height: 520px) {
-  .app { max-width: 920px; padding-top: 6px; padding-bottom: 8px; }
-  .topbar { padding: 0 0 6px; }
-  .icon-btn { width: 38px; height: 38px; }
-  #screen-game.active {
-    display: grid;
-    grid-template-columns: minmax(240px, 1fr) minmax(0, 1.25fr);
-    grid-template-rows: auto auto 1fr;
-    column-gap: 20px;
-  }
-  #screen-game .hud { grid-column: 1; grid-row: 1; }
-  #screen-game .status-row { grid-column: 1; grid-row: 2; justify-content: flex-start; }
-  #screen-game .mode-hint { grid-column: 1; grid-row: 3; text-align: left; margin-top: 0; }
-  #screen-game .board-wrap { grid-column: 2; grid-row: 1 / 4; min-height: 200px; align-items: center; }
-  .hud-row { grid-template-columns: repeat(2, 1fr); row-gap: 6px; }
-  .start-body { display: grid; grid-template-columns: 1.1fr 1fr; column-gap: 28px; align-content: center; }
-  .start-body .hero { grid-column: 1; grid-row: 1 / 4; padding: 0; text-align: left; }
-  .start-body .hero-sub { margin-left: 0; }
-  .start-body > :not(.hero) { grid-column: 2; }
-  .hero-title { font-size: 1.9rem; }
-  .over {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(4, auto);
-    column-gap: 24px;
-    row-gap: 8px;
-    align-content: center;
-    align-items: center;
-    text-align: left;
-  }
-  .over-reason { grid-area: 1 / 1; }
-  .over-score  { grid-area: 2 / 1; font-size: 3.2rem; margin: 0; }
-  .over-record { grid-area: 3 / 1; justify-self: start; margin: 0; }
-  .over-best   { grid-area: 4 / 1; margin: 0; }
-  .over > .stats { grid-area: 1 / 2; margin: 0; }
-  #btn-continue { grid-area: 2 / 2; }
-  #btn-restart  { grid-area: 3 / 2; }
-  #btn-home     { grid-area: 4 / 2; }
-  .over .btn { padding: 10px 16px; margin: 0; }
-  .over > .lb-result { grid-area: 5 / 1 / 6 / 3; margin: 4px 0 0; }
-}
-@media (min-width: 768px) {
-  .app { padding-top: 20px; }
-}
+/* ---------- scroll-driven animations (run by the browser, not by script) ---------- */
+@keyframes hero-out { to { transform: translate3d(0, 80px, 0); opacity: .1; } }
+@keyframes planet-zoom { to { transform: translate3d(0, -40px, 0) scale(1.25) rotate(8deg); } }
+@keyframes planet-zoom-phone { to { transform: translate3d(0, 20px, 0) scale(1.45) rotate(8deg); } }
+@keyframes band-slide { from { transform: translate3d(5%, 0, 0); } to { transform: translate3d(-45%, 0, 0); } }
+@keyframes track-slide { to { transform: translate3d(min(0px, calc(100vw - 100%)), 0, 0); } }
+@keyframes rings-turn { to { transform: rotate(60deg); } }
+@keyframes bar-fill { to { transform: scaleX(1); } }
+.sda .progress { animation: bar-fill linear both; animation-timeline: scroll(root block); }
+.sda .hero-copy { animation: hero-out linear both; animation-timeline: scroll(root block); animation-range: 0 90vh; }
+.sda .orbit { animation: planet-zoom linear both; animation-timeline: scroll(root block); animation-range: 0 90vh; }
+@media (max-width: 759px) { .sda .orbit { animation-name: planet-zoom-phone; } }
+.sda .marquee-track { animation: band-slide linear both; animation-timeline: view(); }
+.sda .side { view-timeline: --side block; }
+.sda .side-track { width: max-content; animation: track-slide linear both; animation-timeline: --side; animation-range: contain 0% contain 100%; }
+.sda .launch { view-timeline: --launch block; }
+.sda .rings { animation: rings-turn linear both; animation-timeline: --launch; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
-  .float { animation: none; opacity: 1; }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .demo, .side { height: auto !important; }
+  .demo-stage, .side-stage { position: static; height: auto; padding-block: 40px; }
+  .side-track { overflow-x: auto; transform: none !important; padding-bottom: 12px; }
+  .reveal.pre { opacity: 1; transform: none; }
 }
 </style>
 </head>
-
 <body>
-<div class="app" id="app">
 
-  <!-- ================= TOP BAR ================= -->
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">
-        <i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i class="on"></i>
-      </span>
-      <span data-game-name>Matrix Recall</span>
-    </div>
-    <div class="topbar-actions">
-      <button class="icon-btn" id="btn-mute" type="button" aria-label="Mute sound" aria-pressed="false">
-        <svg id="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-        <svg id="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>
-      </button>
-      <button class="icon-btn" id="btn-pause" type="button" aria-label="Pause game" hidden>
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
-      </button>
-    </div>
-  </header>
 
-  <!-- ================= START SCREEN ================= -->
-  <section class="screen active" id="screen-start" aria-labelledby="start-title">
-    <div class="start-body">
-      <div class="hero">
-        <div class="demo-grid" id="demo-grid" aria-hidden="true">
-          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="glow" id="glow" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header class="site" id="site-header">
+  <div class="wrap bar">
+    <a class="logo" href="#top" aria-label="Thinkstellar home">
+      <span class="mark" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i class="on"></i></span>
+      <span>Thinkstellar</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#games">Games</a>
+      <a href="#race">Leaderboard</a>
+    </nav>
+    <a class="btn btn-amber" href="games/matrix-recall/index.html">Play now</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy" id="hero-copy">
+        <span class="chip label"><span class="dot" aria-hidden="true"></span>Free brain games · No download</span>
+        <h1 aria-label="Train your brain at light speed.">
+          <span class="w" style="--i:0" aria-hidden="true">Train</span>
+          <span class="w" style="--i:1" aria-hidden="true">your</span>
+          <span class="w" style="--i:2" aria-hidden="true">brain</span><br>
+          <span class="w" style="--i:3" aria-hidden="true">at</span>
+          <span class="w lit" style="--i:4" aria-hidden="true">light</span>
+          <span class="w lit" style="--i:5" aria-hidden="true">speed.</span>
+        </h1>
+        <p class="lede">Short, beautiful games that stretch your memory, focus and reaction time. Play in your browser on any phone or computer, then race the week's leaderboard.</p>
+        <div class="ctas">
+          <a class="btn btn-amber" href="games/matrix-recall/index.html">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+            Play Matrix Recall
+          </a>
+          <a class="btn btn-line" href="#how">See how it works</a>
         </div>
-        <h1 class="hero-title" id="start-title">Watch the tiles light up.<br>Tap them back.</h1>
-        <p class="hero-sub">The grid grows as you level up, and every third level the order counts. Three mistakes ends the run.</p>
+        <div class="scrollcue label"><span class="line" aria-hidden="true"></span>Scroll to launch</div>
       </div>
 
-      <dl class="stats">
-        <div><dt>Best score</dt><dd id="stat-best">0</dd></div>
-        <div><dt>Daily streak</dt><dd id="stat-daily">0</dd></div>
-        <div><dt>Best level</dt><dd id="stat-level">0</dd></div>
-      </dl>
-
-      <button class="btn btn-primary" id="btn-start" type="button">Start game</button>
-      <button class="btn btn-ghost btn-board" id="btn-board" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
-        Weekly leaderboard
-      </button>
-
-      <details class="howto">
-        <summary>How to play</summary>
-        <ul>
-          <li>Tiles light up on the grid. Remember where they were.</li>
-          <li>When the timer starts, tap every tile that lit up.</li>
-          <li>On order rounds the tiles light one at a time. Tap them in the same order.</li>
-          <li>A wrong tap or running out of time costs a life.</li>
-          <li>Every correct tap and every cleared level scores points. Higher levels are worth more, and finishing quickly adds a time bonus.</li>
-          <li>Clear rounds in a row to raise your score multiplier (up to ×3). Every 5 in a row restores a life.</li>
-          <li>Play once a day to keep your daily streak going.</li>
-        </ul>
-      </details>
+      <div class="orbit" id="orbit" aria-hidden="true">
+        <div class="planet"></div>
+        <div class="ring"></div>
+        <div class="moon" id="moon"></div>
+        <div class="mini"><div class="mini-grid" id="mini"></div></div>
+      </div>
     </div>
   </section>
 
-  <!-- ================= GAME SCREEN ================= -->
-  <section class="screen" id="screen-game" aria-label="Game">
-    <div class="hud">
-      <div class="hud-row">
-        <div><span class="hud-label">Level</span><span class="hud-value" id="hud-level">1</span></div>
-        <div><span class="hud-label">Score</span><span class="hud-value" id="hud-score">0</span></div>
-        <div><span class="hud-label">Streak</span><span class="hud-value"><span id="hud-streak">0</span><span class="mult" id="hud-mult">×1</span></span></div>
-        <div><span class="hud-label">Lives</span><span class="lives" id="hud-lives" aria-live="polite"></span></div>
-      </div>
-      <div class="timer idle" id="timer">
-        <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
-        <span class="timer-text" id="timer-text">–</span>
-      </div>
-    </div>
-
-    <div class="status-row">
-      <span class="status" id="status" aria-live="polite">Get ready</span>
-      <span class="chip" id="mode-chip">Pattern round</span>
-    </div>
-
-    <div class="board-wrap">
-      <div class="board locked" id="board" role="group" aria-label="Tile grid"></div>
-      <div class="float-layer" id="float-layer" aria-hidden="true"></div>
-    </div>
-
-    <p class="mode-hint" id="mode-hint"></p>
-  </section>
-
-  <!-- ================= LEADERBOARD SCREEN ================= -->
-  <section class="screen" id="screen-board" aria-labelledby="board-title">
-    <div class="lb-head">
-      <h2 class="lb-title" id="board-title">This week’s top 10</h2>
-      <p class="lb-sub" id="lb-reset">Resets every Monday at midnight, Sri Lanka time</p>
-    </div>
-    <p class="lb-note" id="lb-note" hidden></p>
-    <ol class="lb-list" id="lb-list" aria-label="Top scores this week"></ol>
-    <div class="lb-me" id="lb-me" hidden>
-      <span>Playing as <strong id="lb-myname"></strong></span>
-      <button class="link-btn" id="btn-rename" type="button">Change name</button>
-    </div>
-    <div id="lb-rename-slot"></div>
-    <button class="btn btn-ghost lb-back" id="btn-board-back" type="button">Back</button>
-  </section>
-
-  <!-- Name form: one element, moved into whichever screen needs it -->
-  <form class="name-form" id="name-form" novalidate hidden>
-    <label for="name-input" id="name-label">Add your name to the weekly leaderboard</label>
-    <div class="name-row">
-      <input id="name-input" name="name" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" spellcheck="false" placeholder="Your name">
-      <button class="btn btn-primary btn-sm" type="submit">Save</button>
-    </div>
-    <p class="name-error" id="name-error" hidden></p>
-  </form>
-
-  <!-- ================= GAME OVER SCREEN ================= -->
-  <section class="screen" id="screen-over" aria-labelledby="over-score">
-    <div class="over">
-      <p class="over-reason" id="over-reason">You ran out of lives</p>
-      <h2 class="over-score" id="over-score">0</h2>
-      <p class="over-record" id="over-record" hidden>New best score</p>
-      <p class="over-best" id="over-best">Best score: 0</p>
-
-      <!-- Weekly leaderboard result: name entry the first time, then your rank -->
-      <div class="lb-result" id="lb-result" aria-live="polite" hidden>
-        <div id="lb-name-slot"></div>
-        <p class="lb-rank" id="lb-rank" hidden></p>
-        <button class="link-btn" id="btn-over-board" type="button" hidden>View leaderboard</button>
-      </div>
-
-      <dl class="stats">
-        <div><dt>Level reached</dt><dd id="over-level">1</dd></div>
-        <div><dt>Longest streak</dt><dd id="over-streak">0</dd></div>
-        <div><dt>Daily streak</dt><dd id="over-daily">1</dd></div>
-      </dl>
-
-      <!-- Rewarded-ad continue. Hidden automatically after one use per run. -->
-      <button class="btn btn-reward" id="btn-continue" type="button">Watch an ad to continue with 1 life</button>
-      <button class="btn btn-primary" id="btn-restart" type="button">Play again</button>
-      <button class="btn btn-ghost" id="btn-home" type="button">Back to start</button>
-    </div>
-  </section>
-</div>
-
-<!-- ================= PAUSE MODAL ================= -->
-<div class="modal" id="pause-modal" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
-  <div class="modal-card" tabindex="-1">
-    <h2 id="pause-title">Paused</h2>
-    <p>The board is hidden while the game is paused. If you paused while tiles were showing, they’ll replay when you resume.</p>
-    <button class="btn btn-primary" id="btn-resume" type="button">Resume</button>
-    <button class="btn btn-ghost" id="btn-quit" type="button">Quit to start</button>
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track" id="marquee"></div>
   </div>
-</div>
 
-<!-- ================= AD MODAL (interstitial + rewarded) =================
-     AD SLOT: INTERSTITIAL / REWARDED
-     Replace the placeholder inside #ad-interstitial-slot with your ad
-     unit, or trigger your network's own full-screen ad from AdManager. -->
-<div class="modal ad-modal" id="ad-modal" role="dialog" aria-modal="true" aria-labelledby="ad-modal-title" hidden>
-  <div class="modal-card" id="ad-modal-card" tabindex="-1">
-    <button class="ad-x" id="ad-modal-x" type="button" aria-label="Close ad">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-    </button>
-    <p class="ad-label" id="ad-modal-title">Advertisement</p>
-    <div class="ad-slot ad-slot-rect" id="ad-interstitial-slot" data-ad-slot="interstitial">
-      <span id="ad-interstitial-text">Interstitial ad placeholder (300 × 250)</span>
+  <section class="demo" id="how" aria-labelledby="how-title">
+    <div class="demo-stage">
+      <div class="wrap demo-inner">
+        <div class="demo-copy">
+          <p class="label">How a round works</p>
+          <h2 id="how-title" style="font-size: clamp(36px, 5vw, 58px); font-weight: 800; line-height: 1; margin-top: 12px;">Three beats. One sharp mind.</h2>
+          <div class="steps" id="steps">
+            <div class="step on"><h3>1 · Watch</h3><p>Tiles flash on the grid for about a second. Lock in where they are.</p></div>
+            <div class="step"><h3>2 · Remember</h3><p>The grid goes dark and the timer starts. Hold the pattern in your head.</p></div>
+            <div class="step"><h3>3 · Tap back</h3><p>Tap every tile before time runs out. Every third level, the order counts too.</p></div>
+          </div>
+          <div class="ticks" id="ticks" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+        </div>
+        <div class="demo-board" aria-hidden="true">
+          <div class="board" id="dboard">
+            <div class="board-top"><span>LEVEL 4 · 4×4</span><b id="dscore">0</b></div>
+            <div class="timer"><i id="dtimer"></i></div>
+            <div class="dgrid" id="dgrid"></div>
+            <p class="board-foot" id="dfoot">Memorize the pattern</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <button class="btn btn-primary" id="ad-modal-primary" type="button" disabled>Close ad</button>
-    <button class="btn btn-ghost" id="ad-modal-skip" type="button" hidden>Skip</button>
-  </div>
-</div>
+  </section>
 
-<!-- ================= BOTTOM BANNER AD =================
-     AD SLOT: BOTTOM BANNER
-     Example AdSense unit to paste inside #ad-banner-slot:
-     <ins class="adsbygoogle" style="display:block;width:100%;height:100%"
-          data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="YYYYYYYYYY"
-          data-ad-format="horizontal" data-full-width-responsive="true"></ins>
--->
-<aside class="ad-banner" id="ad-banner" aria-label="Advertisement">
-  <div class="ad-slot ad-slot-banner" id="ad-banner-slot" data-ad-slot="banner-bottom">
-    <span>Advertisement: banner placeholder (320 × 50 mobile, 728 × 90 desktop)</span>
+  <section class="sec" id="games" aria-labelledby="games-title">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2 id="games-title">Live now</h2>
+        <p>One game is ready for launch. More are being built, one constellation at a time.</p>
+      </div>
+      <article class="feature reveal" id="feature">
+        <div class="feature-art" aria-hidden="true"><div class="dgrid" id="fgrid"></div></div>
+        <div class="feature-copy">
+          <p class="label" style="display:flex;align-items:center;gap:10px;color:var(--mint)"><span class="dot" aria-hidden="true"></span>Playable today</p>
+          <h3>Matrix Recall</h3>
+          <p>Tiles light up and you tap them back. The grid grows from 3×3 to 7×7 as you level up, and every third level the order counts.</p>
+          <dl class="facts">
+            <div><dt>Trains</dt><dd>Memory</dd></div>
+            <div><dt>Grids</dt><dd>3×3 to 7×7</dd></div>
+            <div><dt>Lives</dt><dd>3</dd></div>
+          </dl>
+          <a class="btn btn-amber" href="games/matrix-recall/index.html">Play Matrix Recall</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="side" id="side" aria-labelledby="soon-title">
+    <div class="side-stage">
+      <div class="wrap head" style="margin-bottom: 30px;">
+        <h2 id="soon-title">In orbit next</h2>
+        <p>Game concepts we're working on. Names and details may change.</p>
+      </div>
+      <div class="side-track" id="track">
+        <article class="concept">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-20 12 12)"/></svg></div>
+          <p class="label">Concept · Sequence</p>
+          <h3>Orbit Order</h3>
+          <p>Planets light up one after another. Repeat the path before it fades.</p>
+        </article>
+        <article class="concept">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7z"/></svg></div>
+          <p class="label">Concept · Reaction</p>
+          <h3>Comet Reflex</h3>
+          <p>Tap the comet the moment it streaks past. Your reaction time, measured in milliseconds.</p>
+        </article>
+        <article class="concept">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h6M8 4v6M14 7h5M5 17h6M14 15l5 5M19 15l-5 5"/></svg></div>
+          <p class="label">Concept · Logic</p>
+          <h3>Number Nebula</h3>
+          <p>Quick mental maths among the stars. Speed and accuracy both count.</p>
+        </article>
+        <article class="concept ask">
+          <div class="ic" aria-hidden="true" style="color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          <p class="label">Your turn</p>
+          <h3>Have a game idea?</h3>
+          <p>Tell us what you'd love to play next. The best ideas get built.</p>
+        </article>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="sec" id="race" aria-labelledby="race-title">
+    <div class="wrap race">
+      <div class="race-copy reveal">
+        <p class="label">The weekly race</p>
+        <h2 id="race-title" style="font-size: clamp(36px, 5.6vw, 68px); font-weight: 800; line-height: 1;">Everyone starts at zero on Monday.</h2>
+        <p>Your best score of the week counts. The board clears every Monday at midnight, Sri Lanka time, so there's always a fresh shot at the top.</p>
+        <div class="count" id="count" role="timer" aria-label="Time until the leaderboard resets">
+          <div><b id="cd-d">0</b><span>Days</span></div>
+          <div><b id="cd-h">00</b><span>Hours</span></div>
+          <div><b id="cd-m">00</b><span>Mins</span></div>
+          <div><b id="cd-s">00</b><span>Secs</span></div>
+        </div>
+      </div>
+      <div class="podium reveal" id="podium" aria-label="Weekly top three, open to you">
+        <div class="pod"><div class="who">You?</div><div class="col" style="height: 150px">2</div></div>
+        <div class="pod first"><div class="who">You?</div><div class="col" style="height: 210px">1</div></div>
+        <div class="pod"><div class="who">You?</div><div class="col" style="height: 110px">3</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="launch" aria-labelledby="launch-title">
+    <div class="rings" id="rings" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+    <div class="wrap">
+      <h2 id="launch-title" class="reveal">Ready for launch?</h2>
+      <p class="reveal">Matrix Recall takes a couple of minutes a round. See how far your memory goes.</p>
+      <a class="btn btn-amber reveal" href="games/matrix-recall/index.html">Play now</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <p>© 2026 Thinkstellar. Free brain games for curious minds.</p>
+    <nav aria-label="Footer">
+      <a href="#games">Games</a>
+      <a href="#about">About</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#contact">Contact</a>
+    </nav>
   </div>
-</aside>
+</footer>
 
 <script>
-'use strict';
+(() => {
+  'use strict';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const touch = matchMedia('(pointer: coarse)').matches;
+  // Where the browser can run scroll animations itself (Safari 26+, Chrome), motion tied to
+  // scrolling is done in CSS on the compositor, so it moves exactly with the finger.
+  const SDA = !reduce && window.CSS && CSS.supports('animation-timeline: scroll()') && CSS.supports('animation-range: 0px 100px');
+  document.documentElement.classList.toggle('sda', SDA);
+  const $ = (s) => document.querySelector(s);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const vh = () => window.innerHeight;
 
-/* =========================================================================
-   1. CONFIG
-   Everything you might want to tune lives here: name, difficulty curve,
-   scoring and ad frequency.
-   ========================================================================= */
-const CONFIG = {
-  gameName: 'Matrix Recall',            // Working title. Change it here only.
-  storageKey: 'matrixRecall.save.v1',   // localStorage key
+  /* ---------- build repeated bits ---------- */
+  const mini = $('#mini'), dgrid = $('#dgrid'), fgrid = $('#fgrid');
+  for (let i = 0; i < 16; i++) { mini.appendChild(document.createElement('i')); dgrid.appendChild(document.createElement('i')); fgrid.appendChild(document.createElement('i')); }
+  const words = ['Memory', 'Focus', 'Reaction', 'Logic', 'Recall', 'Speed'];
+  const mq = $('#marquee');
+  let mqHTML = '';
+  for (let r = 0; r < 4; r++) words.forEach((w, i) => { mqHTML += `<span class="${(i + r) % 2 ? '' : 'fill'}">${w}</span><b>✦</b>`; });
+  mq.innerHTML = mqHTML;
 
-  startLives: 3,
-  maxLives: 3,
-  lifeEveryStreak: 5,                   // restore a life every N perfect rounds in a row
-  sequenceEvery: 3,                     // every Nth level is an "order matters" round
-
-  /** Grid side length for a level (3x3 up to 7x7). */
-  gridSizeForLevel(level) {
-    if (level <= 2) return 3;
-    if (level <= 5) return 4;
-    if (level <= 9) return 5;
-    if (level <= 14) return 6;
-    return 7;
-  },
-
-  /** Is this an order-matters (sequence) level? */
-  isSequenceLevel(level) {
-    return level % this.sequenceEvery === 0;
-  },
-
-  /** How many tiles to remember. */
-  tileCount(level, size, sequence) {
-    if (sequence) return Math.min(3 + Math.floor(level / 3), 12);
-    return Math.min(2 + level, Math.floor(size * size * 0.5));
-  },
-
-  /** How long the full pattern stays lit (pattern rounds). */
-  patternShowMs(count, level) {
-    return Math.max(900, 700 + count * 140 - level * 10);
-  },
-
-  /** Time per tile flash (sequence rounds). */
-  sequenceStepMs(level) {
-    return Math.max(360, 680 - level * 14);
-  },
-
-  /** Time allowed to tap the tiles back. */
-  recallMs(count, sequence) {
-    return 3000 + count * (sequence ? 850 : 700);
-  },
-
-  points: {
-    tile: 10,              // per correct tile, × level × multiplier
-    roundBase: 50,         // per cleared round, × level
-    timeBonusPerSec: 10    // per second left on the clock
-  },
-
-  /** Score multiplier from the current round streak. */
-  multiplier(streak) {
-    return Math.min(3, 1 + Math.floor(streak / 3) * 0.5);
-  },
-
-  ads: {
-    // MASTER SWITCH. false = no ads anywhere: the bottom banner is hidden,
-    // no in-between ads, and no "Watch an ad to continue" button.
-    // When AdSense is approved: paste the loader script in <head>, set this
-    // to true, and everything below starts working again.
-    enabled: false,
-
-    interstitialEveryNGames: 1,   // interstitial when leaving every Nth game-over screen
-    interstitialCloseDelay: 0,    // seconds before "Close ad" unlocks (0 = closable immediately)
-    rewardedSeconds: 5,           // simulated rewarded video length
-    allowContinue: true           // offer one rewarded continue per run
+  /* ---------- hero mini grid loop ---------- */
+  const miniTiles = [...mini.children];
+  function miniFrame() {
+    miniTiles.forEach((t) => t.className = '');
+    const pick = [...Array(16).keys()].sort(() => Math.random() - .5).slice(0, 5);
+    pick.forEach((k, j) => miniTiles[k].classList.add(j === 4 ? 'ok' : 'lit'));
   }
-};
+  miniFrame();
+  if (!reduce) setInterval(miniFrame, 1700);
 
-/* =========================================================================
-   2. UTILITIES
-   ========================================================================= */
-const $ = (sel) => document.querySelector(sel);
+  /* feature card grid: a fixed pattern with one correct tap */
+  const fTiles = [...fgrid.children];
+  [1, 4, 6, 11, 13].forEach((k) => fTiles[k].classList.add('lit'));
+  fTiles[9].classList.add('ok');
 
-/** Pick k unique random integers from 0..n-1 (Fisher–Yates). */
-function pickUnique(n, k) {
-  const arr = Array.from({ length: n }, (_, i) => i);
-  for (let i = n - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  /* ---------- starfield with warp on fast scroll ---------- */
+  const sky = $('#sky'), ctx = sky.getContext('2d');
+  let W = 0, H = 0, DPR = 1, stars = [];
+  function sizeSky() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    sky.width = W * DPR; sky.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const n = Math.round(clamp(W * H / 5200, 90, 260));
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * W, y: Math.random() * H * 3, z: Math.random() * .9 + .1,
+      tw: Math.random() * Math.PI * 2, warm: Math.random() < .08
+    }));
   }
-  return arr.slice(0, k);
-}
+  sizeSky();
 
-const formatNumber = (n) => Math.round(n).toLocaleString();
+  /* ---------- scroll-driven pieces ---------- */
+  const header = $('#site-header'), progress = $('#progress');
+  const heroCopy = $('#hero-copy'), orbit = $('#orbit'), moon = $('#moon');
+  const demo = $('#how'), steps = [...$('#steps').children], ticks = [...$('#ticks').children];
+  const dTiles = [...dgrid.children], dboard = $('#dboard'), dscore = $('#dscore'), dtimer = $('#dtimer'), dfoot = $('#dfoot');
+  const side = $('#side'), track = $('#track');
+  const stage = demo.querySelector('.demo-stage'), stageInner = demo.querySelector('.demo-inner');
+  const feature = $('#feature'), rings = $('#rings');
 
-/** While any modal is open, make the page behind it unreachable (focus, taps, screen readers). */
-const Modal = (() => {
-  let open = 0;
-  function lockBackground(lock) {
-    open = Math.max(0, open + (lock ? 1 : -1));
-    const inert = open > 0;
-    ['#app', '#ad-banner'].forEach((sel) => {
-      const node = document.querySelector(sel);
-      if (!node) return;
-      node.inert = inert;
-      if (inert) node.setAttribute('aria-hidden', 'true'); else node.removeAttribute('aria-hidden');
-    });
-  }
-  return { lockBackground };
-})();
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Level 4 example round: 6 tiles, multiplier x1, 3.2 s left.
+  // Taps: 6 x (10 x 4) = 240. Clear: 50 x 4 + 32 = 232. Total 472, the game's real scoring.
+  const pattern = [1, 4, 6, 9, 11, 14];
+  const ROUND_TOTAL = 472;
 
-/* =========================================================================
-   3. STORAGE — high score, daily streak and settings in localStorage
-   ========================================================================= */
-const Store = (() => {
-  const defaults = {
-    highScore: 0,
-    bestLevel: 0,
-    bestRoundStreak: 0,
-    dailyStreak: 0,
-    bestDailyStreak: 0,
-    lastPlayedDate: null,  // 'YYYY-MM-DD' in the player's local time
-    gamesPlayed: 0,
-    muted: false,
-    playerName: ''         // name shown on the weekly leaderboard
-  };
-  let data = load();
 
-  function load() {
-    try {
-      const raw = localStorage.getItem(CONFIG.storageKey);
-      return raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
-    } catch (e) {
-      return { ...defaults };
+  /* Everything the scroll effects need is measured here, once, and again only on
+     resize or font load. Nothing is measured inside the animation frame, which is
+     what keeps iPhones from stuttering. */
+  const M = {};
+  function absTop(el) { let y = 0; for (let n = el; n; n = n.offsetParent) y += n.offsetTop; return y; }
+  function measure() {
+    M.vh = innerHeight; M.vw = innerWidth;
+    if (!reduce) {
+      demo.classList.remove('nopin');
+      if (stageInner.offsetHeight > M.vh - 8) demo.classList.add('nopin');   // pin only if it fits
+      side.style.height = '';
+      M.extra = Math.max(0, track.scrollWidth - M.vw);
+      side.style.height = (M.vh + M.extra) + 'px';
     }
+    M.nopin = demo.classList.contains('nopin');
+    M.demoTop = absTop(demo); M.demoSpan = Math.max(1, demo.offsetHeight - M.vh);
+    M.boardTop = absTop(dboard);
+    M.sideTop = absTop(side); M.sideSpan = Math.max(1, side.offsetHeight - M.vh);
+    M.mqHalf = mq.scrollWidth / 2;
+    M.orbitW = orbit.offsetWidth;
+    M.max = Math.max(1, document.documentElement.scrollHeight - M.vh);
+    M.narrow = M.vw < 760;
   }
 
-  function save() {
-    try { localStorage.setItem(CONFIG.storageKey, JSON.stringify(data)); } catch (e) { /* storage full or blocked */ }
-  }
+  let lastY = scrollY, vel = 0, lastStep = -1, lastKey = '', lastT = 0;
+  const last = {};                                   // last value written per property
+  function put(key, el, prop, val) { if (last[key] !== val) { last[key] = val; el.style[prop] = val; } }
 
-  function dateKey(d) {
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${d.getFullYear()}-${m}-${day}`;
-  }
-
-  function yesterdayKey() {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return dateKey(d);
-  }
-
-  /** Call when a game starts. Updates the daily streak once per day. */
-  function registerPlayToday() {
-    const today = dateKey(new Date());
-    if (data.lastPlayedDate !== today) {
-      data.dailyStreak = data.lastPlayedDate === yesterdayKey() ? data.dailyStreak + 1 : 1;
-      data.lastPlayedDate = today;
-      data.bestDailyStreak = Math.max(data.bestDailyStreak, data.dailyStreak);
+  function renderDemo(p) {
+    const step = p < .34 ? 0 : p < .56 ? 1 : 2;
+    if (step !== lastStep) {
+      steps.forEach((el, i) => el.classList.toggle('on', i === step));
+      ticks.forEach((el, i) => el.classList.toggle('on', i <= step));
+      lastStep = step;
     }
-    data.gamesPlayed++;
-    save();
-    return data.dailyStreak;
-  }
-
-  /** Streak still alive if played today or yesterday; otherwise it's 0. */
-  function currentDailyStreak() {
-    const today = dateKey(new Date());
-    return (data.lastPlayedDate === today || data.lastPlayedDate === yesterdayKey()) ? data.dailyStreak : 0;
-  }
-
-  /** Save the result of a run. Returns true if it's a new high score. */
-  function submitResult({ score, level, roundStreak }) {
-    const isNewHigh = score > data.highScore;
-    if (isNewHigh) data.highScore = score;
-    data.bestLevel = Math.max(data.bestLevel, level);
-    data.bestRoundStreak = Math.max(data.bestRoundStreak, roundStreak);
-    save();
-    return isNewHigh;
-  }
-
-  function setMuted(value) { data.muted = value; save(); }
-  function setPlayerName(value) { data.playerName = value; save(); }
-  function get() { return data; }
-  function reset() { data = { ...defaults }; save(); }
-
-  return { get, registerPlayToday, currentDailyStreak, submitResult, setMuted, setPlayerName, reset };
-})();
-
-/* =========================================================================
-   4. SOUND — tiny Web Audio tones, no audio files needed
-   ========================================================================= */
-const Sound = (() => {
-  let ctx = null;
-  const scale = [523.25, 587.33, 659.25, 783.99, 880, 987.77, 1046.5, 1174.66, 1318.51, 1567.98, 1760, 1975.53];
-
-  /** Must be called from a user gesture (browsers block autoplay). */
-  function unlock() {
-    try {
-      if (!ctx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        ctx = new AC();
-      }
-      if (ctx.state === 'suspended') ctx.resume();
-    } catch (e) { /* audio unavailable */ }
-  }
-
-  function tone(freq, dur = 0.12, type = 'sine', vol = 0.07, delay = 0) {
-    if (Store.get().muted || !ctx) return;
-    try {
-      const t = ctx.currentTime + delay;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + dur + 0.02);
-    } catch (e) { /* ignore */ }
-  }
-
-  return {
-    unlock,
-    show: (k = 0) => tone(scale[k % scale.length], 0.18, 'sine', 0.06),
-    tap: (k = 0) => tone(scale[k % scale.length], 0.1, 'triangle', 0.07),
-    wrong: () => { tone(196, 0.22, 'square', 0.035); tone(147, 0.3, 'square', 0.035, 0.08); },
-    clear: () => [0, 2, 4, 7].forEach((k, i) => tone(scale[k], 0.16, 'triangle', 0.06, i * 0.07)),
-    over: () => [4, 2, 0].forEach((k, i) => tone(scale[k] / 2, 0.28, 'sine', 0.07, i * 0.14))
-  };
-})();
-
-function buzz(ms) {
-  if (Store.get().muted || !navigator.vibrate) return;
-  try { navigator.vibrate(ms); } catch (e) { /* ignore */ }
-}
-
-/* =========================================================================
-   5. AD MANAGER — every ad touchpoint goes through here.
-   Replace the placeholder bodies with your network's calls
-   (Google AdSense, AdMob H5 / Ad Placement API, a rewarded video SDK…).
-   ========================================================================= */
-const AdManager = (() => {
-  const modal = $('#ad-modal');
-  const card = $('#ad-modal-card');
-  const title = $('#ad-modal-title');
-  const slotText = $('#ad-interstitial-text');
-  const primaryBtn = $('#ad-modal-primary');
-  const skipBtn = $('#ad-modal-skip');
-
-  let countdownId = null;
-  let gameOverCount = 0;
-  let onPrimary = null;
-  let onSkip = null;
-
-  /** Called once on page load. Activate banner units here. */
-  function init() {
-    if (!CONFIG.ads.enabled) return;
-    // AdSense example (after pasting the <ins> into #ad-banner-slot):
-    // try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-  }
-
-  function openModal({ heading, text, seconds, buttonLabel, allowSkip }) {
-    title.textContent = heading;
-    slotText.textContent = text;
-    skipBtn.hidden = !allowSkip;
-    modal.hidden = false;
-    Modal.lockBackground(true);
-    clearInterval(countdownId);
-    let left = Math.max(0, Math.floor(seconds || 0));
-
-    if (left === 0) {
-      primaryBtn.disabled = false;
-      primaryBtn.textContent = buttonLabel;
-      primaryBtn.focus();
-      return;
+    let found = 0, timer = 1, score = 0, won = false, foot = 'Memorize the pattern';
+    if (step === 1) { timer = 1 - (p - .34) / .22 * .35; foot = 'Your turn'; }
+    if (step === 2) {
+      const q = clamp((p - .56) / .34, 0, 1);
+      found = Math.min(pattern.length, Math.floor(q * (pattern.length + .99)));
+      timer = .65 - q * .25;
+      score = found * 40;
+      won = found === pattern.length;
+      if (won) { score = ROUND_TOTAL; foot = 'Level 4 cleared · +472 with 3.2s to spare'; }
+      else foot = `${found} of ${pattern.length} found`;
     }
-    primaryBtn.disabled = true;
-    primaryBtn.textContent = `${buttonLabel} in ${left}`;
-    (allowSkip ? skipBtn : card).focus();
-
-    countdownId = setInterval(() => {
-      left--;
-      if (left <= 0) {
-        clearInterval(countdownId);
-        primaryBtn.disabled = false;
-        primaryBtn.textContent = buttonLabel;
-        primaryBtn.focus();
-      } else {
-        primaryBtn.textContent = `${buttonLabel} in ${left}`;
-      }
-    }, 1000);
-  }
-
-  function closeModal() {
-    clearInterval(countdownId);
-    modal.hidden = true;
-    Modal.lockBackground(false);
-  }
-
-  primaryBtn.addEventListener('click', () => { const cb = onPrimary; closeModal(); if (cb) cb(); });
-  // The X always works: closes an interstitial normally, or a rewarded ad without the reward.
-  $('#ad-modal-x').addEventListener('click', () => {
-    const cb = skipBtn.hidden ? onPrimary : onSkip;
-    closeModal();
-    if (cb) cb();
-  });
-  skipBtn.addEventListener('click', () => { const cb = onSkip; closeModal(); if (cb) cb(); });
-
-  /** Full-screen ad between games. onClose runs when it's dismissed. */
-  function showInterstitial(onClose) {
-    // Real integration: call your network's interstitial here and run
-    // onClose from its "ad dismissed" callback instead of the placeholder.
-    onPrimary = onClose || null;
-    onSkip = null;
-    openModal({
-      heading: 'Advertisement',
-      text: 'Interstitial ad placeholder (300 × 250)',
-      seconds: CONFIG.ads.interstitialCloseDelay,
-      buttonLabel: 'Close ad',
-      allowSkip: false
-    });
-  }
-
-  /** Rewarded video. onReward runs only if the ad is watched to the end. */
-  function showRewarded(onReward, onCancel) {
-    if (!CONFIG.ads.enabled) { if (onCancel) onCancel(); return; }
-    // Real integration: request a rewarded ad and call onReward from the
-    // network's "reward granted" callback, onCancel if skipped or unavailable.
-    onPrimary = onReward || null;
-    onSkip = onCancel || null;
-    openModal({
-      heading: 'Rewarded ad',
-      text: 'Rewarded video placeholder. Watch to the end to continue your run.',
-      seconds: CONFIG.ads.rewardedSeconds,
-      buttonLabel: 'Claim reward',
-      allowSkip: true
-    });
-    skipBtn.textContent = 'Close ad (no reward)';
-  }
-
-  /** Hooks the game calls — handy for frequency capping or analytics. */
-  function onGameStart() { /* e.g. analytics event "game_start" */ }
-  function onLevelComplete(level) { /* e.g. interstitial every 10 levels: if (level % 10 === 0) ... */ }
-  function onGameOver() { /* e.g. analytics event "game_over" */ }
-
-  /**
-   * Called when the player leaves the game-over screen ("Play again" or
-   * "Back to start"). This is the natural ad break (Google's H5 Games
-   * adBreak type 'next'), and it doesn't get in the way of the
-   * "Watch an ad to continue" choice. `next` always runs after the ad closes.
-   */
-  function beforeNextGame(next) {
-    if (!CONFIG.ads.enabled) { if (next) next(); return; }
-    gameOverCount++;
-    if (gameOverCount % CONFIG.ads.interstitialEveryNGames === 0) showInterstitial(next);
-    else if (next) next();
-  }
-
-  return {
-    init, showInterstitial, showRewarded,
-    onGameStart, onLevelComplete, onGameOver, beforeNextGame,
-    /** Esc key: close the ad the same way the visible close/skip button would. */
-    dismiss: () => $('#ad-modal-x').click(),
-    isOpen: () => !modal.hidden
-  };
-})();
-
-/* =========================================================================
-   6. START-SCREEN DEMO GRID — small looping preview
-   ========================================================================= */
-const Demo = (() => {
-  const cells = Array.from(document.querySelectorAll('#demo-grid i'));
-  let id = null;
-
-  function frame() {
-    cells.forEach((c) => c.classList.remove('on'));
-    pickUnique(cells.length, 4).forEach((i) => cells[i].classList.add('on'));
-  }
-  function start() {
-    stop();
-    frame();
-    if (!prefersReducedMotion) id = setInterval(frame, 1400);
-  }
-  function stop() { clearInterval(id); id = null; }
-
-  return { start, stop };
-})();
-
-/* =========================================================================
-   7. UI — all DOM writes for screens and HUD
-   ========================================================================= */
-const UI = (() => {
-  const el = {
-    app: $('#app'),
-    screens: { start: $('#screen-start'), game: $('#screen-game'), over: $('#screen-over'), board: $('#screen-board') },
-    pauseBtn: $('#btn-pause'),
-    muteBtn: $('#btn-mute'),
-    iconOn: $('#icon-sound-on'),
-    iconOff: $('#icon-sound-off'),
-    level: $('#hud-level'),
-    score: $('#hud-score'),
-    streak: $('#hud-streak'),
-    mult: $('#hud-mult'),
-    lives: $('#hud-lives'),
-    timer: $('#timer'),
-    timerFill: $('#timer-fill'),
-    timerText: $('#timer-text'),
-    status: $('#status'),
-    chip: $('#mode-chip'),
-    hint: $('#mode-hint'),
-    floatLayer: $('#float-layer')
-  };
-
-  function showScreen(name) {
-    Object.entries(el.screens).forEach(([key, node]) => node.classList.toggle('active', key === name));
-    el.pauseBtn.hidden = name !== 'game';
-    if (name === 'start') { refreshStartStats(); Demo.start(); } else { Demo.stop(); }
-    if (name === 'board') Leaderboard.showBoard();
-    window.scrollTo(0, 0);
-  }
-
-  function refreshStartStats() {
-    const d = Store.get();
-    $('#stat-best').textContent = formatNumber(d.highScore);
-    $('#stat-daily').textContent = Store.currentDailyStreak();
-    $('#stat-level').textContent = d.bestLevel;
-  }
-
-  function hud(S) {
-    el.level.textContent = S.level;
-    el.score.textContent = formatNumber(S.score);
-    el.streak.textContent = S.streak;
-    const m = CONFIG.multiplier(S.streak);
-    el.mult.textContent = `×${m}`;
-    el.mult.classList.toggle('hot', m > 1);
-
-    let html = '';
-    for (let i = 0; i < CONFIG.maxLives; i++) {
-      html += `<span class="life${i < S.lives ? '' : ' lost'}"></span>`;
-    }
-    el.lives.innerHTML = html;
-    el.lives.setAttribute('aria-label', `${S.lives} ${S.lives === 1 ? 'life' : 'lives'} left`);
-  }
-
-  function timer(left, total) {
-    const ratio = total > 0 ? left / total : 0;
-    el.timer.classList.remove('idle');
-    el.timer.classList.toggle('low', ratio < 0.3);
-    el.timerFill.style.transform = `scaleX(${ratio})`;
-    el.timerText.textContent = `${(left / 1000).toFixed(1)}s`;
-  }
-
-  function timerIdle() {
-    el.timer.classList.add('idle');
-    el.timer.classList.remove('low');
-    el.timerFill.style.transform = 'scaleX(1)';
-    el.timerText.textContent = '–';
-  }
-
-  function status(text) { el.status.textContent = text; }
-
-  function mode(sequence) {
-    el.chip.textContent = sequence ? 'Order round' : 'Pattern round';
-    el.chip.classList.toggle('order', sequence);
-    el.hint.textContent = sequence
-      ? 'Tap the tiles in the order they lit up.'
-      : 'Tap the lit tiles in any order.';
-  }
-
-  function floatText(text, color) {
-    const node = document.createElement('div');
-    node.className = 'float';
-    node.textContent = text;
-    if (color) node.style.color = color;
-    el.floatLayer.appendChild(node);
-    setTimeout(() => node.remove(), 1050);
-  }
-
-  function setMuted(muted) {
-    el.iconOn.hidden = muted;
-    el.iconOff.hidden = !muted;
-    el.muteBtn.setAttribute('aria-pressed', String(muted));
-    el.muteBtn.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
-  }
-
-  function setPaused(paused) { el.app.classList.toggle('is-paused', paused); }
-
-  function gameOver({ S, isNewHigh, reason }) {
-    $('#over-reason').textContent = reason === 'quit'
-      ? `You ended the run on level ${S.level}`
-      : `You ran out of lives on level ${S.level}`;
-    $('#over-score').textContent = formatNumber(S.score);
-    $('#over-record').hidden = !isNewHigh;
-    $('#over-best').textContent = `Best score: ${formatNumber(Store.get().highScore)}`;
-    $('#over-level').textContent = S.level;
-    $('#over-streak').textContent = S.bestStreak;
-    $('#over-daily').textContent = Store.currentDailyStreak();
-    $('#btn-continue').hidden = !(CONFIG.ads.enabled && CONFIG.ads.allowContinue && !S.continued);
-  }
-
-  return { showScreen, refreshStartStats, hud, timer, timerIdle, status, mode, floatText, setMuted, setPaused, gameOver };
-})();
-
-/* =========================================================================
-   8. GAME ENGINE — state machine
-   Phases: idle → showing → recall → feedback → (showing | over)
-           any active phase ⇄ paused
-   ========================================================================= */
-const Game = (() => {
-  const board = $('#board');
-  const pauseModal = $('#pause-modal');
-  let tiles = [];
-
-  const S = {
-    phase: 'idle',
-    pausedFrom: null,
-    level: 1,
-    score: 0,
-    streak: 0,
-    bestStreak: 0,
-    lives: CONFIG.startLives,
-    size: 3,
-    sequence: false,
-    targets: [],
-    targetSet: new Set(),
-    found: new Set(),
-    progress: 0,
-    timeTotal: 0,
-    timeLeft: 0,
-    continued: false,
-    pending: null       // what to run after the current feedback pause
-  };
-
-  /* ---------- Cancellable timeouts (so pause can freeze everything) ---------- */
-  const timeouts = new Set();
-  function later(fn, ms) {
-    const id = setTimeout(() => { timeouts.delete(id); fn(); }, ms);
-    timeouts.add(id);
-    return id;
-  }
-  function clearLater() {
-    timeouts.forEach(clearTimeout);
-    timeouts.clear();
-  }
-
-  /* ---------- Recall timer (rAF, pause-safe) ---------- */
-  let timerToken = 0;
-  let lastTick = 0;
-
-  function runTimer() {
-    const token = ++timerToken;
-    lastTick = performance.now();
-    const tick = (now) => {
-      if (token !== timerToken) return;          // stopped or restarted
-      S.timeLeft = Math.max(0, S.timeLeft - (now - lastTick));
-      lastTick = now;
-      UI.timer(S.timeLeft, S.timeTotal);
-      if (S.timeLeft <= 0) { timerToken++; onMistake(null, 'timeout'); return; }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-  function startTimer(ms) { S.timeTotal = ms; S.timeLeft = ms; runTimer(); }
-  function stopTimer() { timerToken++; }
-
-  /* ---------- Board ---------- */
-  function buildBoard(size) {
-    board.style.setProperty('--n', size);
-    board.innerHTML = '';
-    tiles = [];
-    for (let i = 0; i < size * size; i++) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'tile';
-      b.dataset.index = i;
-      b.setAttribute('aria-label', `Row ${Math.floor(i / size) + 1}, column ${(i % size) + 1}`);
-      board.appendChild(b);
-      tiles.push(b);
-    }
-  }
-
-  function clearTileStates() {
-    tiles.forEach((t) => { t.className = 'tile'; t.textContent = ''; });
-  }
-
-  function setLocked(locked) {
-    board.classList.toggle('locked', locked);
-    board.setAttribute('aria-disabled', String(locked));
-  }
-
-  function restartAnimation(node, cls) {
-    node.classList.remove(cls);
-    void node.offsetWidth; // force reflow so the animation replays
-    node.classList.add(cls);
-  }
-
-  /* ---------- Round flow ---------- */
-  function startRound() {
-    clearLater();
-    S.size = CONFIG.gridSizeForLevel(S.level);
-    S.sequence = CONFIG.isSequenceLevel(S.level);
-    const count = CONFIG.tileCount(S.level, S.size, S.sequence);
-
-    S.targets = pickUnique(S.size * S.size, count);   // random every round
-    S.targetSet = new Set(S.targets);
-    S.found = new Set();
-    S.progress = 0;
-    S.roundPoints = 0;
-
-    if (tiles.length !== S.size * S.size) buildBoard(S.size);
-    else clearTileStates();
-    board.classList.remove('cleared', 'shake');
-
-    UI.hud(S);
-    UI.mode(S.sequence);
-    playShow();
-  }
-
-  /** Show the pattern (all at once) or the sequence (one by one). */
-  function playShow() {
-    S.phase = 'showing';
-    setLocked(true);
-    clearTileStates();
-    UI.timerIdle();
-    UI.status(S.sequence ? 'Watch the order' : 'Memorize the pattern');
-
-    const lead = 550;
-
-    if (!S.sequence) {
-      const showMs = CONFIG.patternShowMs(S.targets.length, S.level);
-      later(() => {
-        S.targets.forEach((i) => tiles[i].classList.add('lit'));
-        Sound.show(0);
-        later(() => {
-          S.targets.forEach((i) => tiles[i].classList.remove('lit'));
-          later(beginRecall, 250);
-        }, showMs);
-      }, lead);
-    } else {
-      const step = CONFIG.sequenceStepMs(S.level);
-      S.targets.forEach((idx, k) => {
-        later(() => {
-          tiles[idx].classList.add('lit');
-          Sound.show(k);
-          later(() => tiles[idx].classList.remove('lit'), step * 0.7);
-        }, lead + k * step);
+    const key = step + ':' + found;
+    if (key !== lastKey) {                            // tiles only change when the state does
+      lastKey = key;
+      dTiles.forEach((el, i) => {
+        const k = pattern.indexOf(i);
+        el.className = step === 0 && k >= 0 ? 'lit' : step === 2 && k >= 0 && k < found ? 'ok' : '';
       });
-      later(beginRecall, lead + S.targets.length * step + 150);
+      dscore.textContent = score;
+      dboard.classList.toggle('won', won);
+      dfoot.textContent = foot;
     }
+    put('timer', dtimer, 'transform', `scaleX(${timer.toFixed(3)})`);
   }
 
-  function beginRecall() {
-    S.phase = 'recall';
-    setLocked(false);
-    UI.status(S.sequence ? 'Your turn, in order' : 'Your turn');
-    startTimer(CONFIG.recallMs(S.targets.length, S.sequence));
-  }
+  function frame(t) {
+    const dt = Math.min(64, t - lastT || 16); lastT = t;
+    const y = scrollY;
+    const dy = y - lastY; lastY = y;
+    // smooth the speed over time so uneven touch-scroll updates don't make the stars flicker
+    const k = 1 - Math.pow(touch ? .9 : .82, dt / 16);
+    vel += (clamp(dy * 16 / dt, -80, 80) - vel) * k;
 
-  /* ---------- Input ---------- */
-  function handleTap(i) {
-    if (S.phase !== 'recall') return;
-    const tile = tiles[i];
-    if (!tile || S.found.has(i)) return;
+    if (!SDA) put('progress', progress, 'transform', `scaleX(${(y / M.max).toFixed(4)})`);
+    const demoP = M.nopin ? clamp((y + M.vh * .15 - M.boardTop) / (M.vh * .7), 0, 1) : clamp((y - M.demoTop) / M.demoSpan, 0, 1);
+    const sideP = clamp((y - M.sideTop) / M.sideSpan, 0, 1);
+    const inPin = (!M.nopin && y > M.demoTop - 2 && y < M.demoTop + M.demoSpan) || (y > M.sideTop - 2 && y < M.sideTop + M.sideSpan);
+    header.classList.toggle('solid', y > 20);
+    if (inPin) header.classList.add('away');          // keep pinned scenes clear of the header
+    else if (Math.abs(dy) > 3) header.classList.toggle('away', dy > 0 && y > 160);
 
-    const correct = S.sequence ? i === S.targets[S.progress] : S.targetSet.has(i);
-    if (!correct) { onMistake(i, 'wrong'); return; }
-
-    S.found.add(i);
-    tile.classList.add('correct');
-    if (S.sequence) { S.progress++; tile.textContent = S.progress; }
-
-    const pts = Math.round(CONFIG.points.tile * S.level * CONFIG.multiplier(S.streak));
-    S.score += pts;
-    S.roundPoints += pts;
-    Sound.tap(S.found.size - 1);
-    UI.hud(S);
-
-    if (S.found.size === S.targets.length) onRoundWon();
-  }
-
-  /* ---------- Outcomes ---------- */
-  function onRoundWon() {
-    S.phase = 'feedback';
-    stopTimer();
-    setLocked(true);
-
-    // The multiplier shown during the round applies to the whole round
-    // (taps and clear bonus); the streak goes up afterwards.
-    const mult = CONFIG.multiplier(S.streak);
-    const timeBonus = Math.round((S.timeLeft / 1000) * CONFIG.points.timeBonusPerSec);
-    const bonus = Math.round((CONFIG.points.roundBase * S.level + timeBonus) * mult);
-    S.score += bonus;
-    S.roundPoints += bonus;
-    const gained = S.roundPoints;
-    S.streak++;
-    S.bestStreak = Math.max(S.bestStreak, S.streak);
-
-    let extra = '';
-    if (S.streak % CONFIG.lifeEveryStreak === 0 && S.lives < CONFIG.maxLives) {
-      S.lives++;
-      extra = ', life restored';
-    }
-
-    UI.status(`Level ${S.level} cleared${extra}`);
-    UI.floatText(`+${formatNumber(gained)}`);
-    board.classList.add('cleared');
-    Sound.clear();
-    AdManager.onLevelComplete(S.level);
-
-    S.level++;
-    UI.hud(S);
-
-    S.pending = startRound;
-    later(runPending, 1050);
-  }
-
-  function onMistake(index, reason) {
-    S.phase = 'feedback';
-    stopTimer();
-    setLocked(true);
-
-    if (index !== null) tiles[index].classList.add('wrong');
-    // Reveal what was missed (with order numbers on order rounds)
-    S.targets.forEach((t, k) => {
-      if (!S.found.has(t)) {
-        tiles[t].classList.add('missed');
-        if (S.sequence) tiles[t].textContent = k + 1;
+    if (!reduce) {
+      if (y < M.vh * 1.2) {                           // hero only moves while it's on screen
+        if (!SDA) {
+          const hp = clamp(y / (M.vh * .9), 0, 1);
+          put('hc', heroCopy, 'transform', `translate3d(0, ${(hp * 80).toFixed(1)}px, 0)`);
+          put('ho', heroCopy, 'opacity', (1 - hp * .9).toFixed(3));
+          put('or', orbit, 'transform', M.narrow
+            ? `translate3d(0, ${(hp * 20).toFixed(1)}px, 0) scale(${(1 + hp * .45).toFixed(3)}) rotate(${(hp * 8).toFixed(2)}deg)`
+            : `translate3d(0, ${(hp * -40).toFixed(1)}px, 0) scale(${(1 + hp * .25).toFixed(3)}) rotate(${(hp * 8).toFixed(2)}deg)`);
+        }
+        const a = t / 2600, rw = M.orbitW * .52, rh = rw / 4.2, rot = -16 * Math.PI / 180;
+        const ex = Math.cos(a) * rw, ey = Math.sin(a) * rh;
+        put('mo', moon, 'transform', `translate3d(${(ex * Math.cos(rot) - ey * Math.sin(rot)).toFixed(1)}px, ${(ex * Math.sin(rot) + ey * Math.cos(rot)).toFixed(1)}px, 0)`);
+        put('mz', moon, 'zIndex', Math.sin(a) > 0 ? '3' : '0');
       }
-    });
-
-    S.lives--;
-    S.streak = 0;
-    UI.hud(S);
-    restartAnimation(board, 'shake');
-    Sound.wrong();
-    buzz(120);
-
-    const what = reason === 'timeout' ? 'Out of time' : 'Not that one';
-    if (S.lives > 0) {
-      UI.status(`${what}. ${S.lives} ${S.lives === 1 ? 'life' : 'lives'} left`);
-      S.pending = startRound;              // same level, fresh pattern
-    } else {
-      UI.status(what);
-      S.pending = () => gameOver('lives');
-    }
-    later(runPending, 1500);
-  }
-
-  function runPending() {
-    const fn = S.pending;
-    S.pending = null;
-    if (fn) fn();
-  }
-
-  function gameOver(reason) {
-    S.phase = 'over';
-    stopTimer();
-    clearLater();
-    const isNewHigh = Store.submitResult({ score: S.score, level: S.level, roundStreak: S.bestStreak });
-    UI.gameOver({ S, isNewHigh, reason });
-    UI.showScreen('over');
-    Sound.over();
-    AdManager.onGameOver();
-    Leaderboard.onRunEnd({ score: S.score, level: S.level });
-    $('#btn-restart').focus({ preventScroll: true });
-  }
-
-  /* ---------- Public controls ---------- */
-  function start() {
-    Sound.unlock();
-    Store.registerPlayToday();
-    AdManager.onGameStart();
-    clearLater();
-    stopTimer();
-    Object.assign(S, {
-      phase: 'idle', pausedFrom: null, level: 1, score: 0, streak: 0, bestStreak: 0,
-      lives: CONFIG.startLives, continued: false, pending: null
-    });
-    tiles = [];
-    board.innerHTML = '';
-    UI.showScreen('game');
-    UI.hud(S);
-    startRound();
-  }
-
-  /** Rewarded continue: one extra life, same level, once per run. */
-  function continueWithAd() {
-    if (S.phase !== 'over' || S.continued) return;
-    AdManager.showRewarded(() => {
-      S.continued = true;
-      S.lives = 1;
-      UI.showScreen('game');
-      UI.hud(S);
-      startRound();
-    }, () => { /* skipped: stay on game over screen */ });
-  }
-
-  function pause() {
-    if (!['showing', 'recall', 'feedback'].includes(S.phase)) return;
-    S.pausedFrom = S.phase;
-    S.phase = 'paused';
-    clearLater();
-    stopTimer();
-    tiles.forEach((t) => t.classList.remove('lit'));
-    UI.setPaused(true);
-    pauseModal.hidden = false;
-    Modal.lockBackground(true);
-    $('#btn-resume').focus();
-  }
-
-  function hidePauseModal() {
-    if (pauseModal.hidden) return;
-    pauseModal.hidden = true;
-    Modal.lockBackground(false);
-  }
-
-  function resume() {
-    if (S.phase !== 'paused') return;
-    hidePauseModal();
-    UI.setPaused(false);
-    const from = S.pausedFrom;
-    S.pausedFrom = null;
-
-    if (from === 'showing') {
-      playShow();                      // replay the pattern from the top
-    } else if (from === 'recall') {
-      S.phase = 'recall';
-      setLocked(false);
-      runTimer();                      // continue with the time that was left
-    } else {
-      S.phase = 'feedback';
-      later(runPending, 500);
-    }
-  }
-
-  function togglePause() {
-    if (S.phase === 'paused') resume(); else pause();
-  }
-
-  function quit() {
-    hidePauseModal();
-    UI.setPaused(false);
-    clearLater();
-    stopTimer();
-    if (S.score > 0) {
-      Store.submitResult({ score: S.score, level: S.level, roundStreak: S.bestStreak });
-      Leaderboard.onRunEnd({ score: S.score, level: S.level }, false);
-    }
-    S.phase = 'idle';
-    UI.showScreen('start');
-  }
-
-  function goHome() {
-    S.phase = 'idle';
-    UI.showScreen('start');
-  }
-
-  /* ---------- Input wiring ---------- */
-  function init() {
-    // pointerdown feels instant on touch; click with detail 0 = keyboard/AT activation
-    board.addEventListener('pointerdown', (e) => {
-      const t = e.target.closest('.tile');
-      if (!t) return;
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      e.preventDefault();
-      handleTap(Number(t.dataset.index));
-    });
-    board.addEventListener('click', (e) => {
-      if (e.detail !== 0) return;
-      const t = e.target.closest('.tile');
-      if (t) handleTap(Number(t.dataset.index));
-    });
-
-    // Auto-pause when the tab is hidden or the phone is locked
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) pause();
-    });
-  }
-
-  return {
-    init, start, continueWithAd, pause, resume, togglePause, quit, goHome,
-    phase: () => S.phase
-  };
-})();
-
-/* =========================================================================
-   9. WEEKLY LEADERBOARD — shared scores via the page's db capability
-   One document per player (scores/<player id>) holding their best score for
-   the current week. A new week starts every Monday 00:00 Sri Lanka time;
-   old entries simply stop matching the week filter.
-   NOTE: scores are sent by the browser, so they can be faked. Fine for
-   bragging rights; check scores on a server before attaching real prizes.
-   ========================================================================= */
-const Leaderboard = (() => {
-  const TZ_OFFSET_MS = 5.5 * 3600 * 1000;   // Sri Lanka (UTC+5:30), no daylight saving
-  const TOP_N = 10;
-  const NAME_RE = /^[\p{L}\p{N}][\p{L}\p{N} ._'-]*$/u;
-
-  const el = {
-    list: $('#lb-list'),
-    note: $('#lb-note'),
-    reset: $('#lb-reset'),
-    me: $('#lb-me'),
-    myName: $('#lb-myname'),
-    renameSlot: $('#lb-rename-slot'),
-    result: $('#lb-result'),
-    nameSlot: $('#lb-name-slot'),
-    rank: $('#lb-rank'),
-    overBoardBtn: $('#btn-over-board'),
-    form: $('#name-form'),
-    label: $('#name-label'),
-    input: $('#name-input'),
-    error: $('#name-error')
-  };
-
-  let db = null;
-  let uid = null;
-  let canPost = true;          // flips to false if the server refuses our writes
-  let ready = null;            // resolves once db/user are known
-  let entries = [];            // current week's top N, already validated
-  let week = weekKey();
-  let unsubscribe = null;
-  let pendingRun = null;       // a finished run waiting for the player's name
-  let formMode = null;         // 'over' | 'rename'
-
-  /* ---------- week helpers (Sri Lanka time) ---------- */
-  function slNow() { return new Date(Date.now() + TZ_OFFSET_MS); }
-  function mondayUTC(d) {
-    const day = (d.getUTCDay() + 6) % 7;          // Monday = 0
-    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day);
-  }
-  function weekKey() {
-    const m = new Date(mondayUTC(slNow()));
-    return `${m.getUTCFullYear()}-${String(m.getUTCMonth() + 1).padStart(2, '0')}-${String(m.getUTCDate()).padStart(2, '0')}`;
-  }
-  function resetText() {
-    const nextMonday = mondayUTC(slNow()) + 7 * 864e5;            // in "SL clock" ms
-    const left = nextMonday - (Date.now() + TZ_OFFSET_MS);
-    const d = Math.floor(left / 864e5);
-    const h = Math.floor((left % 864e5) / 36e5);
-    const m = Math.max(1, Math.floor((left % 36e5) / 6e4));
-    const span = d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
-    return `New week in ${span} · resets Monday at midnight, Sri Lanka time`;
-  }
-
-  /* ---------- names ---------- */
-  function cleanName(raw) { return String(raw || '').replace(/\s+/g, ' ').trim(); }
-  function nameProblem(name) {
-    if (name.length < 2) return 'Use at least 2 characters.';
-    if (name.length > 16) return 'Use 16 characters or fewer.';
-    if (!NAME_RE.test(name)) return 'Use letters, numbers, spaces, dots, dashes or apostrophes.';
-    return '';
-  }
-  const myName = () => Store.get().playerName || '';
-
-  /* ---------- setup ---------- */
-  function init() {
-    ready = (async () => {
-      if (!window.claude || typeof window.claude.use !== 'function') return;
-      const [dbNs, userNs] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
-      if (!dbNs) return;
-      db = dbNs;
-      uid = userNs ? await userNs.id() : null;
-      if (userNs) {
-        const w = await userNs.can('data.write');
-        if (w === false) canPost = false;
-      }
-      subscribe();
-    })().catch(() => { db = null; });
-
-    el.form.addEventListener('submit', onNameSubmit);
-    el.input.addEventListener('input', () => { el.error.hidden = true; });
-    $('#btn-rename').addEventListener('click', () => openForm('rename'));
-  }
-
-  function subscribe() {
-    if (!db) return;
-    if (unsubscribe) unsubscribe();
-    week = weekKey();
-    const q = db.collection('scores').where('week', '==', week).orderBy('score', 'desc').limit(TOP_N);
-    unsubscribe = q.onSnapshot((snap) => {
-      entries = snap.docs.map(toEntry).filter(Boolean);
-      renderList();
-    }, () => { entries = []; renderList(); });
-  }
-
-  /** Shared data is other people's input: validate every field before use. */
-  function toEntry(doc) {
-    const d = doc.data() || {};
-    const score = Number(d.score);
-    if (!Number.isFinite(score) || score <= 0) return null;
-    const name = cleanName(d.name).slice(0, 16) || 'Player';
-    const level = Number.isFinite(Number(d.level)) ? Math.max(1, Math.floor(Number(d.level))) : null;
-    return { id: doc.id, name, score: Math.floor(score), level };
-  }
-
-  /* ---------- leaderboard screen ---------- */
-  function showBoard() {
-    if (week !== weekKey()) subscribe();          // a new week started while the page was open
-    el.reset.textContent = resetText();
-    hideForm();
-    renderList();
-  }
-
-  function renderList() {
-    el.list.replaceChildren();
-    entries.forEach((e, i) => {
-      const li = document.createElement('li');
-      li.className = 'lb-row' + (i < 3 ? ' top' : '') + (i === 0 ? ' first' : '') + (e.id === uid ? ' me' : '');
-      const pos = document.createElement('span');
-      pos.className = 'lb-pos';
-      pos.textContent = i + 1;
-      const who = document.createElement('span');
-      who.className = 'lb-who';
-      const nm = document.createElement('span');
-      nm.className = 'lb-name';
-      nm.textContent = e.name;                     // textContent: never parse names as HTML
-      who.appendChild(nm);
-      if (e.level) {
-        const lv = document.createElement('span');
-        lv.className = 'lb-lvl';
-        lv.textContent = `Level ${e.level}`;
-        who.appendChild(lv);
-      }
-      const sc = document.createElement('span');
-      sc.className = 'lb-score';
-      sc.textContent = formatNumber(e.score);
-      li.append(pos, who, sc);
-      el.list.appendChild(li);
-    });
-
-    let note = '';
-    if (!db) note = 'The leaderboard isn’t available here. Your scores are still saved on this device.';
-    else if (!entries.length) note = 'No scores yet this week. Play a game to take the top spot.';
-    else if (!canPost) note = 'You can see the leaderboard, but your access doesn’t allow posting scores.';
-    el.note.textContent = note;
-    el.note.hidden = !note;
-
-    el.me.hidden = !(db && uid && myName());
-    el.myName.textContent = myName();
-  }
-
-  /* ---------- name form (shared by game-over and rename) ---------- */
-  function openForm(mode) {
-    formMode = mode;
-    el.label.textContent = mode === 'rename' ? 'Change your leaderboard name' : 'Add your name to the weekly leaderboard';
-    el.input.value = myName();
-    el.error.hidden = true;
-    (mode === 'rename' ? el.renameSlot : el.nameSlot).appendChild(el.form);
-    el.form.hidden = false;
-    if (mode === 'rename') el.me.hidden = true;
-    // Only grab focus when the player asked to rename; on game over a popped-up keyboard would be jarring
-    if (mode === 'rename') el.input.focus({ preventScroll: true });
-  }
-  function hideForm() {
-    el.form.hidden = true;
-    formMode = null;
-  }
-
-  async function onNameSubmit(e) {
-    e.preventDefault();
-    const name = cleanName(el.input.value);
-    const problem = nameProblem(name);
-    if (problem) { el.error.textContent = problem; el.error.hidden = false; el.input.focus(); return; }
-    Store.setPlayerName(name);
-    const mode = formMode;
-    hideForm();
-    if (mode === 'rename') {
-      renderList();
-      await updateNameOnBoard(name);
-    } else if (pendingRun) {
-      const run = pendingRun;
-      pendingRun = null;
-      await postRun(run);
-    }
-  }
-
-  async function updateNameOnBoard(name) {
-    if (!db || !uid || !canPost) return;
-    try {
-      const ref = db.collection('scores').doc(uid);
-      const snap = await ref.get();
-      if (snap.exists) await ref.update({ name });
-    } catch (err) { handleWriteError(err); }
-  }
-
-  /* ---------- posting scores ---------- */
-  /** Called at the end of every run (game over or quit). showResult=false for quits. */
-  async function onRunEnd({ score, level }, showResult = true) {
-    el.result.hidden = true;
-    if (!showResult) { if (myName()) postRun({ score, level }, false); return; }
-    await ready;
-    if (!db || !uid || score <= 0) return;
-    el.result.hidden = false;
-    el.rank.hidden = true;
-    el.overBoardBtn.hidden = true;
-    if (!canPost) { showRank('Your access doesn’t allow posting to the leaderboard.'); return; }
-    if (!myName()) { pendingRun = { score, level }; openForm('over'); return; }
-    await postRun({ score, level });
-  }
-
-  async function postRun({ score, level }, showResult = true) {
-    await ready;
-    if (!db || !uid || !canPost || score <= 0) return;
-    if (week !== weekKey()) subscribe();
-    const ref = db.collection('scores').doc(uid);
-    let best = score;
-    try {
-      const snap = await ref.get();
-      const d = snap.exists ? snap.data() : null;
-      const prev = d && d.week === week ? Number(d.score) || 0 : 0;
-      if (score > prev) {
-        await ref.set({ name: myName(), score: Math.floor(score), level: Math.floor(level), week, at: Date.now() });
-      } else {
-        best = prev;
-        if (d && d.name !== myName()) await ref.update({ name: myName() });
-      }
-    } catch (err) {
-      handleWriteError(err);
-      if (showResult) showRank('Your score couldn’t be posted right now.');
-      return;
-    }
-    if (showResult) await showMyRank(score, best);
-  }
-
-  async function showMyRank(score, best) {
-    let rank = null;
-    try {
-      const higher = await db.collection('scores').where('week', '==', week).where('score', '>', best).limit(1000).get();
-      rank = higher.size + 1;
-    } catch (e) { /* rank is optional */ }
-    const improved = score >= best;
-    const head = rank ? `You’re #${rank} this week` : 'Score posted';
-    const tail = improved ? ` with ${formatNumber(best)}.` : `. Your best this week is ${formatNumber(best)}.`;
-    showRank(head + tail, rank && rank <= 3 ? ' Top 3!' : '');
-  }
-
-  function showRank(text, extra = '') {
-    el.rank.textContent = text + extra;
-    el.rank.hidden = false;
-    el.overBoardBtn.hidden = !db;
-    el.result.hidden = false;
-  }
-
-  function handleWriteError(err) {
-    if (err && err.code === 'invalid_argument') canPost = false;   // access level can't write
-  }
-
-  return { init, showBoard, onRunEnd };
-})();
-
-/* =========================================================================
-   10. BOOT
-   ========================================================================= */
-(function boot() {
-  // Apply the working title everywhere
-  document.title = CONFIG.gameName;
-  document.querySelectorAll('[data-game-name]').forEach((n) => { n.textContent = CONFIG.gameName; });
-
-  // Ads off: hide the banner and give its space back to the game
-  document.documentElement.classList.toggle('no-ads', !CONFIG.ads.enabled);
-  $('#ad-banner').hidden = !CONFIG.ads.enabled;
-
-  UI.setMuted(Store.get().muted);
-  UI.showScreen('start');
-  AdManager.init();
-  Game.init();
-  Leaderboard.init();
-
-  $('#btn-start').addEventListener('click', Game.start);
-  // Leaderboard screen: "Back" returns to wherever it was opened from
-  let boardFrom = 'start';
-  const openBoard = (from) => { boardFrom = from; UI.showScreen('board'); };
-  $('#btn-board').addEventListener('click', () => openBoard('start'));
-  $('#btn-over-board').addEventListener('click', () => openBoard('over'));
-  $('#btn-board-back').addEventListener('click', () => UI.showScreen(boardFrom));
-
-  // Opening "How to play" scrolls the whole list into view (above the banner)
-  const howto = $('.howto');
-  howto.addEventListener('toggle', () => {
-    if (howto.open) howto.scrollIntoView({ block: 'nearest', behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-  });
-  // Leaving the game-over screen is the ad break (see AdManager.beforeNextGame)
-  $('#btn-restart').addEventListener('click', () => AdManager.beforeNextGame(Game.start));
-  $('#btn-home').addEventListener('click', () => AdManager.beforeNextGame(Game.goHome));
-  $('#btn-continue').addEventListener('click', Game.continueWithAd);
-  $('#btn-pause').addEventListener('click', Game.togglePause);
-  $('#btn-resume').addEventListener('click', Game.resume);
-  $('#btn-quit').addEventListener('click', Game.quit);
-
-  $('#btn-mute').addEventListener('click', () => {
-    const muted = !Store.get().muted;
-    Store.setMuted(muted);
-    UI.setMuted(muted);
-    if (!muted) { Sound.unlock(); Sound.tap(0); }
-  });
-
-  // Keyboard: Esc or P pauses/resumes during play
-  document.addEventListener('keydown', (e) => {
-    if (AdManager.isOpen()) {
-      if (e.key === 'Escape') { e.preventDefault(); AdManager.dismiss(); }
-      return;
-    }
-    const key = e.key.toLowerCase();
-    if (key === 'escape' || key === 'p') {
-      const phase = Game.phase();
-      if (['showing', 'recall', 'feedback', 'paused'].includes(phase)) {
-        e.preventDefault();
-        Game.togglePause();
+      if (!SDA) {
+        put('mq', mq, 'transform', `translate3d(${(-(y * .35) % M.mqHalf).toFixed(1)}px, 0, 0)`);
+        put('tr', track, 'transform', `translate3d(${(-sideP * M.extra).toFixed(1)}px, 0, 0)`);
+        put('ri', rings, 'transform', `rotate(${(y * .04).toFixed(2)}deg)`);
       }
     }
-  });
+    renderDemo(reduce ? .95 : demoP);
+
+    // stars: phones redraw at 30fps and keep the warp gentle
+    if (!touch || (t % 66) < 34 || Math.abs(vel) > 2) {
+      ctx.clearRect(0, 0, W, H);
+      const warp = reduce ? 0 : Math.max(0, Math.abs(vel) - 4) * (touch ? .7 : 1);
+      // phones: stars drift on their own instead of following scroll position, which iOS
+      // reports in uneven steps (that made them judder); the warp streaks still react to speed
+      const par = touch ? 0 : .35, drift = touch ? t * .004 : 0;
+      for (const st of stars) {
+        const py = ((st.y + drift * st.z - y * st.z * par) % (H * 3) + H * 3) % (H * 3) - H;
+        if (py < -40 || py > H + 40) continue;
+        const tw = reduce ? 1 : .6 + Math.sin(st.tw + t / 900) * .4;
+        const len = Math.min(warp, 50) * st.z * 1.4;
+        ctx.globalAlpha = clamp(st.z * tw + warp / 140, .1, 1);
+        ctx.strokeStyle = ctx.fillStyle = st.warm ? '#ffd88a' : '#dfe4ff';
+        if (len > 2) {
+          ctx.lineWidth = st.z * 1.5;
+          ctx.beginPath(); ctx.moveTo(st.x, py); ctx.lineTo(st.x, py + (vel > 0 ? len : -len)); ctx.stroke();
+        } else {
+          ctx.beginPath(); ctx.arc(st.x, py, st.z * 1.3, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    requestAnimationFrame(frame);
+  }
+  measure();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  addEventListener('load', measure);
+  requestAnimationFrame(frame);
+
+  /* ---------- reveal on scroll (only things below the fold start hidden) ---------- */
+  if (!reduce && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.remove('pre'); io.unobserve(e.target); } });
+    }, { threshold: .15 });
+    document.querySelectorAll('.reveal, #podium').forEach((el) => {
+      if (el.getBoundingClientRect().top > vh()) { el.classList.add('pre'); io.observe(el); }
+    });
+  }
+
+  /* ---------- tilt on the featured card + cursor glow (mouse only) ---------- */
+  const glow = $('#glow');
+  if (!reduce && matchMedia('(pointer: fine)').matches) {
+    addEventListener('pointermove', (e) => {
+      glow.classList.add('on');
+      glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    }, { passive: true });
+    feature.addEventListener('pointermove', (e) => {
+      const r = feature.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      feature.style.transform = `perspective(1200px) rotateY(${x * 5}deg) rotateX(${-y * 5}deg)`;
+    });
+    feature.addEventListener('pointerleave', () => { feature.style.transform = ''; });
+  }
+
+  /* ---------- weekly reset countdown: Monday 00:00 Sri Lanka time (UTC+5:30) ---------- */
+  const OFF = 5.5 * 3600e3;
+  const cd = { d: $('#cd-d'), h: $('#cd-h'), m: $('#cd-m'), s: $('#cd-s') };
+  function tick() {
+    const sl = new Date(Date.now() + OFF);
+    const day = (sl.getUTCDay() + 6) % 7;
+    const nextMon = Date.UTC(sl.getUTCFullYear(), sl.getUTCMonth(), sl.getUTCDate() - day + 7);
+    let left = Math.max(0, Math.floor((nextMon - sl.getTime()) / 1000));
+    const d = Math.floor(left / 86400); left %= 86400;
+    const h = Math.floor(left / 3600); left %= 3600;
+    const m = Math.floor(left / 60), s = left % 60;
+    cd.d.textContent = d;
+    cd.h.textContent = String(h).padStart(2, '0');
+    cd.m.textContent = String(m).padStart(2, '0');
+    cd.s.textContent = String(s).padStart(2, '0');
+  }
+  tick(); setInterval(tick, 1000);
+
+  let rw = innerWidth, rh = innerHeight;
+  addEventListener('resize', () => {
+    if (innerWidth === rw && Math.abs(innerHeight - rh) < 120) return;   // ignore toolbar show/hide
+    rw = innerWidth; rh = innerHeight;
+    sizeSky(); measure();
+  }, { passive: true });
 })();
 </script>
+
 </body>
 </html>
